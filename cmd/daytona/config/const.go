@@ -3,7 +3,13 @@
 
 package config
 
-import "github.com/daytonaio/daytona/pkg/os"
+import (
+	"slices"
+	"strings"
+
+	"github.com/daytonaio/daytona/internal/jetbrains"
+	"github.com/daytonaio/daytona/pkg/os"
+)
 
 func GetBinaryUrls() map[os.OperatingSystem]string {
 	return map[os.OperatingSystem]string{
@@ -17,17 +23,32 @@ func GetBinaryUrls() map[os.OperatingSystem]string {
 }
 
 func GetIdeList() []Ide {
-	return []Ide{
+	ides := []Ide{
 		{"vscode", "VS Code"},
 		{"browser", "VS Code - Browser"},
+		{"ssh", "Terminal SSH"},
 	}
+
+	sortedJbIdes := []Ide{}
+	for id, ide := range jetbrains.GetIdes() {
+		sortedJbIdes = append(sortedJbIdes, Ide{string(id), ide.Name})
+	}
+	slices.SortFunc(sortedJbIdes, func(i, j Ide) int {
+		return strings.Compare(i.Name, j.Name)
+	})
+	ides = append(ides, sortedJbIdes...)
+
+	return ides
 }
 
-func GetGitProviderList() []GitProvider {
+func GetSupportedGitProviders() []GitProvider {
 	return []GitProvider{
-		{"github", "GitHub", ""},
-		{"gitlab", "GitLab", ""},
-		{"bitbucket", "Bitbucket", ""},
+		{"github", "GitHub"},
+		{"gitlab", "GitLab"},
+		{"gitlab-self-managed", "GitLab Self-managed"},
+		{"bitbucket", "Bitbucket"},
+		{"codeberg", "Codeberg"},
+		{"gitea", "Gitea"},
 	}
 }
 
@@ -36,9 +57,15 @@ func GetDocsLinkFromGitProvider(providerId string) string {
 	case "github":
 		return "https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-personal-access-token-classic"
 	case "gitlab":
+		fallthrough
+	case "gitlab-self-managed":
 		return "https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html#create-a-personal-access-token"
 	case "bitbucket":
 		return "https://support.atlassian.com/bitbucket-cloud/docs/create-an-app-password"
+	case "codeberg":
+		return "https://docs.codeberg.org/advanced/access-token/"
+	case "gitea":
+		return "https://docs.gitea.com/1.21/development/api-usage#generating-and-listing-api-tokens"
 	default:
 		return ""
 	}

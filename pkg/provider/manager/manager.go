@@ -7,14 +7,18 @@ import (
 	"errors"
 	"os"
 	"os/exec"
-	"path"
+	"path/filepath"
+	"runtime"
+	"strings"
 
+	"github.com/daytonaio/daytona/internal"
 	"github.com/daytonaio/daytona/internal/util"
 	os_util "github.com/daytonaio/daytona/pkg/os"
 	. "github.com/daytonaio/daytona/pkg/provider"
-	"github.com/daytonaio/daytona/pkg/server/targets"
+	"github.com/daytonaio/daytona/pkg/server/providertargets"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
+	"github.com/shirou/gopsutil/process"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -23,16 +27,58 @@ type pluginRef struct {
 	path   string
 }
 
-var pluginRefs map[string]*pluginRef = make(map[string]*pluginRef)
-
 var ProviderHandshakeConfig = plugin.HandshakeConfig{
 	ProtocolVersion:  1,
 	MagicCookieKey:   "DAYTONA_PROVIDER_PLUGIN",
 	MagicCookieValue: "daytona_provider",
 }
 
-func GetProvider(name string) (*Provider, error) {
-	pluginRef, ok := pluginRefs[name]
+type IProviderManager interface {
+	DownloadProvider(downloadUrls map[os_util.OperatingSystem]string, providerName string, throwIfPresent bool) (string, error)
+	GetProvider(name string) (*Provider, error)
+	GetProviders() map[string]Provider
+	GetProvidersManifest() (*ProvidersManifest, error)
+	RegisterProvider(pluginPath string) error
+	TerminateProviderProcesses(providersBasePath string) error
+	UninstallProvider(name string) error
+}
+
+type ProviderManagerConfig struct {
+	ServerDownloadUrl     string
+	ServerUrl             string
+	ServerApiUrl          string
+	LogsDir               string
+	ProviderTargetService providertargets.IProviderTargetService
+	RegistryUrl           string
+	BaseDir               string
+}
+
+func NewProviderManager(config ProviderManagerConfig) *ProviderManager {
+	return &ProviderManager{
+		pluginRefs:            make(map[string]*pluginRef),
+		serverDownloadUrl:     config.ServerDownloadUrl,
+		serverUrl:             config.ServerUrl,
+		serverApiUrl:          config.ServerApiUrl,
+		logsDir:               config.LogsDir,
+		providerTargetService: config.ProviderTargetService,
+		registryUrl:           config.RegistryUrl,
+		baseDir:               config.BaseDir,
+	}
+}
+
+type ProviderManager struct {
+	pluginRefs            map[string]*pluginRef
+	serverDownloadUrl     string
+	serverUrl             string
+	serverApiUrl          string
+	logsDir               string
+	providerTargetService providertargets.IProviderTargetService
+	registryUrl           string
+	baseDir               string
+}
+
+func (m *ProviderManager) GetProvider(name string) (*Provider, error) {
+	pluginRef, ok := m.pluginRefs[name]
 	if !ok {
 		return nil, errors.New("provider not found")
 	}
@@ -55,10 +101,10 @@ func GetProvider(name string) (*Provider, error) {
 	return &provider, nil
 }
 
-func GetProviders() map[string]Provider {
+func (m *ProviderManager) GetProviders() map[string]Provider {
 	providers := make(map[string]Provider)
-	for name := range pluginRefs {
-		provider, err := GetProvider(name)
+	for name := range m.pluginRefs {
+		provider, err := m.GetProvider(name)
 		if err != nil {
 			log.Printf("Error getting provider %s: %s", name, err)
 			continue
@@ -70,9 +116,13 @@ func GetProviders() map[string]Provider {
 	return providers
 }
 
-func RegisterProvider(pluginPath, serverDownloadUrl, serverUrl, serverApiUrl string) error {
-	pluginName := path.Base(pluginPath)
-	pluginBasePath := path.Dir(pluginPath)
+func (m *ProviderManager) RegisterProvider(pluginPath string) error {
+	pluginName := filepath.Base(pluginPath)
+	pluginBasePath := filepath.Dir(pluginPath)
+
+	if runtime.GOOS == "windows" && strings.HasSuffix(pluginPath, ".exe") {
+		pluginName = strings.TrimSuffix(pluginName, ".exe")
+	}
 
 	err := os_util.ChmodX(pluginPath)
 	if err != nil {
@@ -96,31 +146,31 @@ func RegisterProvider(pluginPath, serverDownloadUrl, serverUrl, serverApiUrl str
 		Managed:         true,
 	})
 
-	pluginRefs[pluginName] = &pluginRef{
+	m.pluginRefs[pluginName] = &pluginRef{
 		client: client,
 		path:   pluginBasePath,
 	}
 
 	log.Infof("Provider %s registered", pluginName)
 
-	p, err := GetProvider(pluginName)
+	p, err := m.GetProvider(pluginName)
 	if err != nil {
 		return errors.New("failed to initialize provider: " + err.Error())
 	}
 
 	_, err = (*p).Initialize(InitializeProviderRequest{
 		BasePath:          pluginBasePath,
-		ServerDownloadUrl: serverDownloadUrl,
-		// TODO: get version from somewhere
-		ServerVersion: "latest",
-		ServerUrl:     serverUrl,
-		ServerApiUrl:  serverApiUrl,
+		ServerDownloadUrl: m.serverDownloadUrl,
+		ServerVersion:     internal.Version,
+		ServerUrl:         m.serverUrl,
+		ServerApiUrl:      m.serverApiUrl,
+		LogsDir:           m.logsDir,
 	})
 	if err != nil {
 		return errors.New("failed to initialize provider: " + err.Error())
 	}
 
-	existingTargets, err := targets.GetTargets()
+	existingTargets, err := m.providerTargetService.Map()
 	if err != nil {
 		return errors.New("failed to get targets: " + err.Error())
 	}
@@ -137,7 +187,7 @@ func RegisterProvider(pluginPath, serverDownloadUrl, serverUrl, serverApiUrl str
 			continue
 		}
 
-		err := targets.SetTarget(target)
+		err := m.providerTargetService.Save(&target)
 		if err != nil {
 			log.Errorf("Failed to set target %s: %s", target.Name, err)
 		} else {
@@ -151,8 +201,8 @@ func RegisterProvider(pluginPath, serverDownloadUrl, serverUrl, serverApiUrl str
 	return nil
 }
 
-func UninstallProvider(name string) error {
-	pluginRef, ok := pluginRefs[name]
+func (m *ProviderManager) UninstallProvider(name string) error {
+	pluginRef, ok := m.pluginRefs[name]
 	if !ok {
 		return errors.New("provider not found")
 	}
@@ -163,7 +213,26 @@ func UninstallProvider(name string) error {
 		return errors.New("failed to remove provider: " + err.Error())
 	}
 
-	delete(pluginRefs, name)
+	delete(m.pluginRefs, name)
+
+	return nil
+}
+
+func (m *ProviderManager) TerminateProviderProcesses(providersBasePath string) error {
+	process, err := process.Processes()
+
+	if err != nil {
+		return err
+	}
+
+	for _, p := range process {
+		if e, err := p.Exe(); err == nil && strings.HasPrefix(e, providersBasePath) {
+			err := p.Kill()
+			if err != nil {
+				log.Errorf("Failed to kill process %d: %s", p.Pid, err)
+			}
+		}
+	}
 
 	return nil
 }

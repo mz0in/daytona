@@ -6,26 +6,25 @@ package selection
 import (
 	"fmt"
 	"os"
-	"strings"
 
-	"github.com/daytonaio/daytona/pkg/types"
+	"github.com/daytonaio/daytona/pkg/serverapiclient"
 	"github.com/daytonaio/daytona/pkg/views"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-func selectRepositoryPrompt(repositories []types.Repository, secondaryProjectOrder int, choiceChan chan<- string) {
+func selectRepositoryPrompt(repositories []serverapiclient.GitRepository, secondaryProjectOrder int, choiceChan chan<- string) {
 	items := []list.Item{}
 
 	// Populate items with titles and descriptions from workspaces.
 	for _, repository := range repositories {
-		newItem := item{id: repository.Url, title: repository.Name, choiceProperty: repository.Url, desc: repository.Url}
+		newItem := item[string]{id: *repository.Url, title: *repository.Name, choiceProperty: *repository.Url, desc: *repository.Url}
 		items = append(items, newItem)
 	}
 
 	l := views.GetStyledSelectList(items)
-	m := model{list: l}
+	m := model[string]{list: l}
 	m.list.Title = "CHOOSE A REPOSITORY"
 	if secondaryProjectOrder > 0 {
 		m.list.Title += fmt.Sprintf(" (Secondary Project #%d)", secondaryProjectOrder)
@@ -37,14 +36,14 @@ func selectRepositoryPrompt(repositories []types.Repository, secondaryProjectOrd
 		os.Exit(1)
 	}
 
-	if m, ok := p.(model); ok && m.choice != "" {
-		choiceChan <- m.choice
+	if m, ok := p.(model[string]); ok && m.choice != nil {
+		choiceChan <- *m.choice
 	} else {
 		choiceChan <- ""
 	}
 }
 
-func GetRepositoryFromPrompt(repositories []types.Repository, secondaryProjectOrder int) types.Repository {
+func GetRepositoryFromPrompt(repositories []serverapiclient.GitRepository, secondaryProjectOrder int) serverapiclient.GitRepository {
 	choiceChan := make(chan string)
 
 	go selectRepositoryPrompt(repositories, secondaryProjectOrder, choiceChan)
@@ -52,24 +51,10 @@ func GetRepositoryFromPrompt(repositories []types.Repository, secondaryProjectOr
 	choice := <-choiceChan
 
 	for _, repository := range repositories {
-		if repository.Url == choice {
+		if *repository.Url == choice {
 			return repository
 		}
 	}
 
-	return types.Repository{}
-}
-
-func getRepositoryNameFromUrl(url string) string {
-	if url == "" {
-		return "/"
-	}
-	url = strings.TrimSuffix(url, "/")
-
-	parts := strings.Split(url, "/")
-	if len(parts) < 2 {
-		return ""
-	}
-
-	return parts[len(parts)-1]
+	return serverapiclient.GitRepository{}
 }

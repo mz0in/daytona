@@ -8,11 +8,12 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 )
 
 type ServerApi struct {
 	Url string `json:"url"`
+	Key string `json:"key"`
 }
 
 type DefaultProvider struct {
@@ -37,10 +38,17 @@ type Ide struct {
 	Name string
 }
 
+const DefaultIdeId = "vscode"
+
 type GitProvider struct {
-	Id       string
-	Name     string
-	Username string
+	Id   string
+	Name string
+}
+
+const configDoesntExistError = "config does not exist. Run `daytona server` to create a default profile or `daytona profile add` to connect to a remote server."
+
+func IsNotExist(err error) bool {
+	return err.Error() == configDoesntExistError
 }
 
 func GetConfig() (*Config, error) {
@@ -51,13 +59,7 @@ func GetConfig() (*Config, error) {
 
 	_, err = os.Stat(configFilePath)
 	if os.IsNotExist(err) {
-		defaultConfig := getDefaultConfig()
-		err = defaultConfig.Save()
-		if err != nil {
-			return nil, err
-		}
-
-		return &defaultConfig, nil
+		return nil, errors.New(configDoesntExistError)
 	}
 
 	if err != nil {
@@ -94,7 +96,7 @@ func (c *Config) Save() error {
 		return err
 	}
 
-	err = os.MkdirAll(path.Dir(configFilePath), 0755)
+	err = os.MkdirAll(filepath.Dir(configFilePath), 0755)
 	if err != nil {
 		return err
 	}
@@ -157,28 +159,13 @@ func (c *Config) GetProfile(profileId string) (Profile, error) {
 	return Profile{}, errors.New("profile not found")
 }
 
-func getDefaultConfig() Config {
-	return Config{
-		ActiveProfileId: "default",
-		Profiles: []Profile{
-			{
-				Id:   "default",
-				Name: "default",
-				Api: ServerApi{
-					Url: "http://localhost:3000",
-				},
-			},
-		},
-	}
-}
-
 func getConfigPath() (string, error) {
 	configDir, err := GetConfigDir()
 	if err != nil {
 		return "", err
 	}
 
-	return path.Join(configDir, "config.json"), nil
+	return filepath.Join(configDir, "config.json"), nil
 }
 
 func GetConfigDir() (string, error) {
@@ -187,5 +174,19 @@ func GetConfigDir() (string, error) {
 		return "", err
 	}
 
-	return path.Join(userConfigDir, "daytona"), nil
+	return filepath.Join(userConfigDir, "daytona"), nil
+}
+
+func DeleteConfigDir() error {
+	configDir, err := GetConfigDir()
+	if err != nil {
+		return err
+	}
+
+	err = os.RemoveAll(configDir)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

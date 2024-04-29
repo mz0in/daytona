@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/daytonaio/daytona/internal/util"
 	"github.com/daytonaio/daytona/pkg/serverapiclient"
 	"github.com/daytonaio/daytona/pkg/views"
 
@@ -16,8 +17,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-func selectWorkspacePrompt(workspaces []serverapiclient.Workspace, actionVerb string, choiceChan chan<- string) {
-
+func selectWorkspacePrompt(workspaces []serverapiclient.WorkspaceDTO, actionVerb string, choiceChan chan<- *serverapiclient.WorkspaceDTO) {
 	// Initialize an empty list of items.
 	items := []list.Item{}
 
@@ -27,20 +27,31 @@ func selectWorkspacePrompt(workspaces []serverapiclient.Workspace, actionVerb st
 		for _, project := range workspace.Projects {
 			projectNames = append(projectNames, *project.Name)
 		}
-		newItem := item{title: *workspace.Name, desc: strings.Join(projectNames, ", "), choiceProperty: *workspace.Name}
+
+		// Get the time if available
+		uptime := ""
+		createdTime := ""
+		if workspace.Info != nil && workspace.Info.Projects != nil && len(workspace.Info.Projects) > 0 && workspace.Info.Projects[0].Created != nil {
+			createdTime = util.FormatCreatedTime(*workspace.Info.Projects[0].Created)
+		}
+		if len(workspace.Projects) > 0 && workspace.Projects[0].State != nil && workspace.Projects[0].State.Uptime != nil {
+			uptime = fmt.Sprintf("up %s", util.FormatUptime(*workspace.Projects[0].State.Uptime))
+		}
+
+		newItem := item[serverapiclient.WorkspaceDTO]{
+			title:          *workspace.Name,
+			id:             *workspace.Id,
+			desc:           strings.Join(projectNames, ", "),
+			createdTime:    createdTime,
+			uptime:         uptime,
+			target:         *workspace.Target,
+			choiceProperty: workspace,
+		}
+
 		items = append(items, newItem)
 	}
 
-	d := list.NewDefaultDelegate()
-
-	d.Styles.SelectedTitle = lipgloss.NewStyle().
-		Border(lipgloss.NormalBorder(), false, false, false, true).
-		BorderForeground(views.Blue).
-		Foreground(views.Blue).
-		Bold(true).
-		Padding(0, 0, 0, 1)
-
-	d.Styles.SelectedDesc = d.Styles.SelectedTitle.Copy().Foreground(views.DimmedBlue)
+	d := ItemDelegate[serverapiclient.WorkspaceDTO]{}
 
 	l := list.New(items, d, 0, 0)
 
@@ -50,7 +61,7 @@ func selectWorkspacePrompt(workspaces []serverapiclient.Workspace, actionVerb st
 	l.FilterInput.PromptStyle = lipgloss.NewStyle().Foreground(views.Green)
 	l.FilterInput.TextStyle = lipgloss.NewStyle().Foreground(views.Green)
 
-	m := model{list: l}
+	m := model[serverapiclient.WorkspaceDTO]{list: l}
 
 	m.list.Title = "SELECT A WORKSPACE TO " + strings.ToUpper(actionVerb)
 	m.list.Styles.Title = lipgloss.NewStyle().Foreground(views.Green).Bold(true)
@@ -61,15 +72,15 @@ func selectWorkspacePrompt(workspaces []serverapiclient.Workspace, actionVerb st
 		os.Exit(1)
 	}
 
-	if m, ok := p.(model); ok && m.choice != "" {
+	if m, ok := p.(model[serverapiclient.WorkspaceDTO]); ok && m.choice != nil {
 		choiceChan <- m.choice
 	} else {
-		choiceChan <- ""
+		choiceChan <- nil
 	}
 }
 
-func GetWorkspaceNameFromPrompt(workspaces []serverapiclient.Workspace, actionVerb string) string {
-	choiceChan := make(chan string)
+func GetWorkspaceFromPrompt(workspaces []serverapiclient.WorkspaceDTO, actionVerb string) *serverapiclient.WorkspaceDTO {
+	choiceChan := make(chan *serverapiclient.WorkspaceDTO)
 
 	go selectWorkspacePrompt(workspaces, actionVerb, choiceChan)
 

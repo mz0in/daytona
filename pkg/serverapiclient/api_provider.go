@@ -19,14 +19,13 @@ import (
 	"strings"
 )
 
-
 // ProviderAPIService ProviderAPI service
 type ProviderAPIService service
 
 type ApiGetTargetManifestRequest struct {
-	ctx context.Context
+	ctx        context.Context
 	ApiService *ProviderAPIService
-	provider string
+	provider   string
 }
 
 func (r ApiGetTargetManifestRequest) Execute() (*map[string]ProviderProviderTargetProperty, *http.Response, error) {
@@ -38,26 +37,27 @@ GetTargetManifest Get provider target manifest
 
 Get provider target manifest
 
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @param provider Provider name
- @return ApiGetTargetManifestRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@param provider Provider name
+	@return ApiGetTargetManifestRequest
 */
 func (a *ProviderAPIService) GetTargetManifest(ctx context.Context, provider string) ApiGetTargetManifestRequest {
 	return ApiGetTargetManifestRequest{
 		ApiService: a,
-		ctx: ctx,
-		provider: provider,
+		ctx:        ctx,
+		provider:   provider,
 	}
 }
 
 // Execute executes the request
-//  @return map[string]ProviderProviderTargetProperty
+//
+//	@return map[string]ProviderProviderTargetProperty
 func (a *ProviderAPIService) GetTargetManifestExecute(r ApiGetTargetManifestRequest) (*map[string]ProviderProviderTargetProperty, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodGet
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  *map[string]ProviderProviderTargetProperty
+		localVarHTTPMethod  = http.MethodGet
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue *map[string]ProviderProviderTargetProperty
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ProviderAPIService.GetTargetManifest")
@@ -88,6 +88,20 @@ func (a *ProviderAPIService) GetTargetManifestExecute(r ApiGetTargetManifestRequ
 	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
 	if localVarHTTPHeaderAccept != "" {
 		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
+	}
+	if r.ctx != nil {
+		// API Key Authentication
+		if auth, ok := r.ctx.Value(ContextAPIKeys).(map[string]APIKey); ok {
+			if apiKey, ok := auth["Bearer"]; ok {
+				var key string
+				if apiKey.Prefix != "" {
+					key = apiKey.Prefix + " " + apiKey.Key
+				} else {
+					key = apiKey.Key
+				}
+				localVarHeaderParams["Authorization"] = key
+			}
+		}
 	}
 	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
 	if err != nil {
@@ -127,9 +141,9 @@ func (a *ProviderAPIService) GetTargetManifestExecute(r ApiGetTargetManifestRequ
 }
 
 type ApiInstallProviderRequest struct {
-	ctx context.Context
+	ctx        context.Context
 	ApiService *ProviderAPIService
-	provider *InstallProviderRequest
+	provider   *InstallProviderRequest
 }
 
 // Provider to install
@@ -147,22 +161,22 @@ InstallProvider Install a provider
 
 Install a provider
 
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiInstallProviderRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiInstallProviderRequest
 */
 func (a *ProviderAPIService) InstallProvider(ctx context.Context) ApiInstallProviderRequest {
 	return ApiInstallProviderRequest{
 		ApiService: a,
-		ctx: ctx,
+		ctx:        ctx,
 	}
 }
 
 // Execute executes the request
 func (a *ProviderAPIService) InstallProviderExecute(r ApiInstallProviderRequest) (*http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodPost
-		localVarPostBody     interface{}
-		formFiles            []formFile
+		localVarHTTPMethod = http.MethodPost
+		localVarPostBody   interface{}
+		formFiles          []formFile
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ProviderAPIService.InstallProvider")
@@ -198,6 +212,20 @@ func (a *ProviderAPIService) InstallProviderExecute(r ApiInstallProviderRequest)
 	}
 	// body params
 	localVarPostBody = r.provider
+	if r.ctx != nil {
+		// API Key Authentication
+		if auth, ok := r.ctx.Value(ContextAPIKeys).(map[string]APIKey); ok {
+			if apiKey, ok := auth["Bearer"]; ok {
+				var key string
+				if apiKey.Prefix != "" {
+					key = apiKey.Prefix + " " + apiKey.Key
+				} else {
+					key = apiKey.Key
+				}
+				localVarHeaderParams["Authorization"] = key
+			}
+		}
+	}
 	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
 	if err != nil {
 		return nil, err
@@ -227,7 +255,7 @@ func (a *ProviderAPIService) InstallProviderExecute(r ApiInstallProviderRequest)
 }
 
 type ApiListProvidersRequest struct {
-	ctx context.Context
+	ctx        context.Context
 	ApiService *ProviderAPIService
 }
 
@@ -240,24 +268,25 @@ ListProviders List providers
 
 List providers
 
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiListProvidersRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiListProvidersRequest
 */
 func (a *ProviderAPIService) ListProviders(ctx context.Context) ApiListProvidersRequest {
 	return ApiListProvidersRequest{
 		ApiService: a,
-		ctx: ctx,
+		ctx:        ctx,
 	}
 }
 
 // Execute executes the request
-//  @return []Provider
+//
+//	@return []Provider
 func (a *ProviderAPIService) ListProvidersExecute(r ApiListProvidersRequest) ([]Provider, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodGet
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  []Provider
+		localVarHTTPMethod  = http.MethodGet
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue []Provider
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ProviderAPIService.ListProviders")
@@ -287,6 +316,20 @@ func (a *ProviderAPIService) ListProvidersExecute(r ApiListProvidersRequest) ([]
 	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
 	if localVarHTTPHeaderAccept != "" {
 		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
+	}
+	if r.ctx != nil {
+		// API Key Authentication
+		if auth, ok := r.ctx.Value(ContextAPIKeys).(map[string]APIKey); ok {
+			if apiKey, ok := auth["Bearer"]; ok {
+				var key string
+				if apiKey.Prefix != "" {
+					key = apiKey.Prefix + " " + apiKey.Key
+				} else {
+					key = apiKey.Key
+				}
+				localVarHeaderParams["Authorization"] = key
+			}
+		}
 	}
 	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
 	if err != nil {
@@ -326,9 +369,9 @@ func (a *ProviderAPIService) ListProvidersExecute(r ApiListProvidersRequest) ([]
 }
 
 type ApiUninstallProviderRequest struct {
-	ctx context.Context
+	ctx        context.Context
 	ApiService *ProviderAPIService
-	provider string
+	provider   string
 }
 
 func (r ApiUninstallProviderRequest) Execute() (*http.Response, error) {
@@ -340,24 +383,24 @@ UninstallProvider Uninstall a provider
 
 Uninstall a provider
 
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @param provider Provider to uninstall
- @return ApiUninstallProviderRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@param provider Provider to uninstall
+	@return ApiUninstallProviderRequest
 */
 func (a *ProviderAPIService) UninstallProvider(ctx context.Context, provider string) ApiUninstallProviderRequest {
 	return ApiUninstallProviderRequest{
 		ApiService: a,
-		ctx: ctx,
-		provider: provider,
+		ctx:        ctx,
+		provider:   provider,
 	}
 }
 
 // Execute executes the request
 func (a *ProviderAPIService) UninstallProviderExecute(r ApiUninstallProviderRequest) (*http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodPost
-		localVarPostBody     interface{}
-		formFiles            []formFile
+		localVarHTTPMethod = http.MethodPost
+		localVarPostBody   interface{}
+		formFiles          []formFile
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ProviderAPIService.UninstallProvider")
@@ -388,6 +431,20 @@ func (a *ProviderAPIService) UninstallProviderExecute(r ApiUninstallProviderRequ
 	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
 	if localVarHTTPHeaderAccept != "" {
 		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
+	}
+	if r.ctx != nil {
+		// API Key Authentication
+		if auth, ok := r.ctx.Value(ContextAPIKeys).(map[string]APIKey); ok {
+			if apiKey, ok := auth["Bearer"]; ok {
+				var key string
+				if apiKey.Prefix != "" {
+					key = apiKey.Prefix + " " + apiKey.Key
+				} else {
+					key = apiKey.Key
+				}
+				localVarHeaderParams["Authorization"] = key
+			}
+		}
 	}
 	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
 	if err != nil {

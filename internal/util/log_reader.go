@@ -1,42 +1,38 @@
+// Copyright 2024 Daytona Platforms Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 package util
 
 import (
 	"bufio"
+	"bytes"
 	"context"
-	"os/exec"
+	"io"
+	"time"
 )
 
-func ReadLog(ctx context.Context, filePath *string, follow bool, c chan []byte, errChan chan error) {
-	if filePath == nil {
-		return
-	}
+func ReadLog(ctx context.Context, logReader io.Reader, follow bool, c chan []byte, errChan chan error) {
+	reader := bufio.NewReader(logReader)
 
-	ctxCancel, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	tailCmd := exec.CommandContext(ctxCancel, "tail", "-n", "+1")
-	if follow {
-		tailCmd.Args = append(tailCmd.Args, "-f")
-	}
-	tailCmd.Args = append(tailCmd.Args, *filePath)
-
-	reader, err := tailCmd.StdoutPipe()
-	if err != nil {
-		errChan <- err
-		return
-	}
-	scanner := bufio.NewScanner(reader)
-	go func() {
-		for scanner.Scan() {
-			c <- scanner.Bytes()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			line, err := reader.ReadBytes('\n')
+			if err != nil {
+				if err != io.EOF {
+					errChan <- err
+				} else if !follow {
+					errChan <- io.EOF
+					return
+				}
+				time.Sleep(500 * time.Millisecond) // Sleep to avoid busy loop
+				continue
+			}
+			// Trim the newline character
+			line = bytes.TrimRight(line, "\n")
+			c <- line
 		}
-	}()
-
-	err = tailCmd.Start()
-	if err != nil {
-		errChan <- err
-		return
 	}
-
-	errChan <- tailCmd.Wait()
 }

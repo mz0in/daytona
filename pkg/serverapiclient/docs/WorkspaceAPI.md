@@ -8,6 +8,7 @@ Method | HTTP request | Description
 [**GetWorkspace**](WorkspaceAPI.md#GetWorkspace) | **Get** /workspace/{workspaceId} | Get workspace info
 [**ListWorkspaces**](WorkspaceAPI.md#ListWorkspaces) | **Get** /workspace | List workspaces
 [**RemoveWorkspace**](WorkspaceAPI.md#RemoveWorkspace) | **Delete** /workspace/{workspaceId} | Remove workspace
+[**SetProjectState**](WorkspaceAPI.md#SetProjectState) | **Post** /workspace/{workspaceId}/{projectId}/state | Set project state
 [**StartProject**](WorkspaceAPI.md#StartProject) | **Post** /workspace/{workspaceId}/{projectId}/start | Start project
 [**StartWorkspace**](WorkspaceAPI.md#StartWorkspace) | **Post** /workspace/{workspaceId}/start | Start workspace
 [**StopProject**](WorkspaceAPI.md#StopProject) | **Post** /workspace/{workspaceId}/{projectId}/stop | Stop project
@@ -36,7 +37,7 @@ import (
 )
 
 func main() {
-	workspace := *openapiclient.NewCreateWorkspace() // CreateWorkspace | Create workspace
+	workspace := *openapiclient.NewCreateWorkspaceRequest([]openapiclient.CreateWorkspaceRequestProject{*openapiclient.NewCreateWorkspaceRequestProject("Name_example")}) // CreateWorkspaceRequest | Create workspace
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
@@ -61,7 +62,7 @@ Other parameters are passed through a pointer to a apiCreateWorkspaceRequest str
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **workspace** | [**CreateWorkspace**](CreateWorkspace.md) | Create workspace | 
+ **workspace** | [**CreateWorkspaceRequest**](CreateWorkspaceRequest.md) | Create workspace | 
 
 ### Return type
 
@@ -69,7 +70,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-No authorization required
+[Bearer](../README.md#Bearer)
 
 ### HTTP request headers
 
@@ -83,7 +84,7 @@ No authorization required
 
 ## GetWorkspace
 
-> Workspace GetWorkspace(ctx, workspaceId).Execute()
+> WorkspaceDTO GetWorkspace(ctx, workspaceId).Execute()
 
 Get workspace info
 
@@ -102,7 +103,7 @@ import (
 )
 
 func main() {
-	workspaceId := "workspaceId_example" // string | Workspace ID
+	workspaceId := "workspaceId_example" // string | Workspace ID or Name
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
@@ -111,7 +112,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error when calling `WorkspaceAPI.GetWorkspace``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `GetWorkspace`: Workspace
+	// response from `GetWorkspace`: WorkspaceDTO
 	fmt.Fprintf(os.Stdout, "Response from `WorkspaceAPI.GetWorkspace`: %v\n", resp)
 }
 ```
@@ -122,7 +123,7 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**workspaceId** | **string** | Workspace ID | 
+**workspaceId** | **string** | Workspace ID or Name | 
 
 ### Other Parameters
 
@@ -135,11 +136,11 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**Workspace**](Workspace.md)
+[**WorkspaceDTO**](WorkspaceDTO.md)
 
 ### Authorization
 
-No authorization required
+[Bearer](../README.md#Bearer)
 
 ### HTTP request headers
 
@@ -153,7 +154,7 @@ No authorization required
 
 ## ListWorkspaces
 
-> []Workspace ListWorkspaces(ctx).Execute()
+> []WorkspaceDTO ListWorkspaces(ctx).Verbose(verbose).Execute()
 
 List workspaces
 
@@ -172,35 +173,40 @@ import (
 )
 
 func main() {
+	verbose := true // bool | Verbose (optional)
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.WorkspaceAPI.ListWorkspaces(context.Background()).Execute()
+	resp, r, err := apiClient.WorkspaceAPI.ListWorkspaces(context.Background()).Verbose(verbose).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `WorkspaceAPI.ListWorkspaces``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `ListWorkspaces`: []Workspace
+	// response from `ListWorkspaces`: []WorkspaceDTO
 	fmt.Fprintf(os.Stdout, "Response from `WorkspaceAPI.ListWorkspaces`: %v\n", resp)
 }
 ```
 
 ### Path Parameters
 
-This endpoint does not need any parameter.
+
 
 ### Other Parameters
 
 Other parameters are passed through a pointer to a apiListWorkspacesRequest struct via the builder pattern
 
 
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **verbose** | **bool** | Verbose | 
+
 ### Return type
 
-[**[]Workspace**](Workspace.md)
+[**[]WorkspaceDTO**](WorkspaceDTO.md)
 
 ### Authorization
 
-No authorization required
+[Bearer](../README.md#Bearer)
 
 ### HTTP request headers
 
@@ -268,7 +274,80 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-No authorization required
+[Bearer](../README.md#Bearer)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: Not defined
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
+[[Back to Model list]](../README.md#documentation-for-models)
+[[Back to README]](../README.md)
+
+
+## SetProjectState
+
+> SetProjectState(ctx, workspaceId, projectId).SetState(setState).Execute()
+
+Set project state
+
+
+
+### Example
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"os"
+	openapiclient "github.com/GIT_USER_ID/GIT_REPO_ID/serverapiclient"
+)
+
+func main() {
+	workspaceId := "workspaceId_example" // string | Workspace ID or Name
+	projectId := "projectId_example" // string | Project ID
+	setState := *openapiclient.NewSetProjectState() // SetProjectState | Set State
+
+	configuration := openapiclient.NewConfiguration()
+	apiClient := openapiclient.NewAPIClient(configuration)
+	r, err := apiClient.WorkspaceAPI.SetProjectState(context.Background(), workspaceId, projectId).SetState(setState).Execute()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error when calling `WorkspaceAPI.SetProjectState``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
+	}
+}
+```
+
+### Path Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+**ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
+**workspaceId** | **string** | Workspace ID or Name | 
+**projectId** | **string** | Project ID | 
+
+### Other Parameters
+
+Other parameters are passed through a pointer to a apiSetProjectStateRequest struct via the builder pattern
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+
+
+ **setState** | [**SetProjectState**](SetProjectState.md) | Set State | 
+
+### Return type
+
+ (empty response body)
+
+### Authorization
+
+[Bearer](../README.md#Bearer)
 
 ### HTTP request headers
 
@@ -301,7 +380,7 @@ import (
 )
 
 func main() {
-	workspaceId := "workspaceId_example" // string | Workspace ID
+	workspaceId := "workspaceId_example" // string | Workspace ID or Name
 	projectId := "projectId_example" // string | Project ID
 
 	configuration := openapiclient.NewConfiguration()
@@ -320,7 +399,7 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**workspaceId** | **string** | Workspace ID | 
+**workspaceId** | **string** | Workspace ID or Name | 
 **projectId** | **string** | Project ID | 
 
 ### Other Parameters
@@ -339,7 +418,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-No authorization required
+[Bearer](../README.md#Bearer)
 
 ### HTTP request headers
 
@@ -372,7 +451,7 @@ import (
 )
 
 func main() {
-	workspaceId := "workspaceId_example" // string | Workspace ID
+	workspaceId := "workspaceId_example" // string | Workspace ID or Name
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
@@ -390,7 +469,7 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**workspaceId** | **string** | Workspace ID | 
+**workspaceId** | **string** | Workspace ID or Name | 
 
 ### Other Parameters
 
@@ -407,7 +486,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-No authorization required
+[Bearer](../README.md#Bearer)
 
 ### HTTP request headers
 
@@ -440,7 +519,7 @@ import (
 )
 
 func main() {
-	workspaceId := "workspaceId_example" // string | Workspace ID
+	workspaceId := "workspaceId_example" // string | Workspace ID or Name
 	projectId := "projectId_example" // string | Project ID
 
 	configuration := openapiclient.NewConfiguration()
@@ -459,7 +538,7 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**workspaceId** | **string** | Workspace ID | 
+**workspaceId** | **string** | Workspace ID or Name | 
 **projectId** | **string** | Project ID | 
 
 ### Other Parameters
@@ -478,7 +557,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-No authorization required
+[Bearer](../README.md#Bearer)
 
 ### HTTP request headers
 
@@ -511,7 +590,7 @@ import (
 )
 
 func main() {
-	workspaceId := "workspaceId_example" // string | Workspace ID
+	workspaceId := "workspaceId_example" // string | Workspace ID or Name
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
@@ -529,7 +608,7 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**workspaceId** | **string** | Workspace ID | 
+**workspaceId** | **string** | Workspace ID or Name | 
 
 ### Other Parameters
 
@@ -546,7 +625,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-No authorization required
+[Bearer](../README.md#Bearer)
 
 ### HTTP request headers
 

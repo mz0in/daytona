@@ -12,27 +12,30 @@ import (
 	"github.com/daytonaio/daytona/cmd/daytona/config"
 	"github.com/daytonaio/daytona/pkg/serverapiclient"
 	"github.com/daytonaio/daytona/pkg/views"
+	view_util "github.com/daytonaio/daytona/pkg/views/util"
 )
 
-type GitProviderSelectView struct {
-	Id       string
-	Username string
-	Token    string
+type GitProviderView struct {
+	Id         string
+	Name       string
+	Username   string
+	BaseApiUrl string
+	Token      string
 }
 
-func GitProviderSelectionView(gitProviderAddView *GitProviderSelectView, userGitProviders []serverapiclient.GitProvider, isDeleting bool) {
-	availableGitProviders := config.GetGitProviderList()
+func GitProviderSelectionView(gitProviderAddView *serverapiclient.GitProvider, userGitProviders []serverapiclient.GitProvider, isDeleting bool) {
+	supportedProviders := config.GetSupportedGitProviders()
 
-	var options []huh.Option[string]
-	for _, availableProvider := range availableGitProviders {
+	var gitProviderOptions []huh.Option[string]
+	for _, supportedProvider := range supportedProviders {
 		if isDeleting {
 			for _, userProvider := range userGitProviders {
-				if *userProvider.Id == availableProvider.Id {
-					options = append(options, huh.Option[string]{Key: availableProvider.Name, Value: availableProvider.Id})
+				if *userProvider.Id == supportedProvider.Id {
+					gitProviderOptions = append(gitProviderOptions, huh.Option[string]{Key: supportedProvider.Name, Value: supportedProvider.Id})
 				}
 			}
 		} else {
-			options = append(options, huh.Option[string]{Key: availableProvider.Name, Value: availableProvider.Id})
+			gitProviderOptions = append(gitProviderOptions, huh.Option[string]{Key: supportedProvider.Name, Value: supportedProvider.Id})
 		}
 	}
 
@@ -41,9 +44,9 @@ func GitProviderSelectionView(gitProviderAddView *GitProviderSelectView, userGit
 			huh.NewSelect[string]().
 				Title("Choose a Git provider").
 				Options(
-					options...,
+					gitProviderOptions...,
 				).
-				Value(&gitProviderAddView.Id)),
+				Value(gitProviderAddView.Id)),
 	).WithTheme(views.GetCustomTheme())
 
 	err := gitProviderForm.Run()
@@ -55,7 +58,7 @@ func GitProviderSelectionView(gitProviderAddView *GitProviderSelectView, userGit
 		huh.NewGroup(
 			huh.NewInput().
 				Title("Username").
-				Value(&gitProviderAddView.Username).
+				Value(gitProviderAddView.Username).
 				Validate(func(str string) error {
 					if str == "" {
 						return errors.New("username can not be blank")
@@ -63,12 +66,26 @@ func GitProviderSelectionView(gitProviderAddView *GitProviderSelectView, userGit
 					return nil
 				}),
 		).WithHideFunc(func() bool {
-			return isDeleting || gitProviderAddView.Id != "bitbucket"
+			return isDeleting || !providerRequiresUsername(*gitProviderAddView.Id)
+		}),
+		huh.NewGroup(
+			huh.NewInput().
+				Title("Self-managed API URL").
+				Value(gitProviderAddView.BaseApiUrl).
+				Description("For example: http://gitlab-host/api/v4/ or https://gitea-host").
+				Validate(func(str string) error {
+					if str == "" {
+						return errors.New("URL can not be blank")
+					}
+					return nil
+				}),
+		).WithHideFunc(func() bool {
+			return isDeleting || !providerRequiresApiUrl(*gitProviderAddView.Id)
 		}),
 		huh.NewGroup(
 			huh.NewInput().
 				Title("Personal access token").
-				Value(&gitProviderAddView.Token).
+				Value(gitProviderAddView.Token).
 				Password(true).
 				Validate(func(str string) error {
 					if str == "" {
@@ -79,12 +96,18 @@ func GitProviderSelectionView(gitProviderAddView *GitProviderSelectView, userGit
 		).WithHide(isDeleting),
 	).WithTheme(views.GetCustomTheme())
 
-	fmt.Println("More information on:")
-	fmt.Println(config.GetDocsLinkFromGitProvider(gitProviderAddView.Id))
-	fmt.Println()
+	view_util.RenderInfoMessage(fmt.Sprintf("More information on:\n%s", config.GetDocsLinkFromGitProvider(*gitProviderAddView.Id)))
 
 	err = userDataForm.Run()
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func providerRequiresUsername(gitProviderId string) bool {
+	return gitProviderId == "bitbucket"
+}
+
+func providerRequiresApiUrl(gitProviderId string) bool {
+	return gitProviderId == "gitlab-self-managed" || gitProviderId == "gitea"
 }

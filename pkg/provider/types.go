@@ -1,6 +1,12 @@
+// Copyright 2024 Daytona Platforms Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 package provider
 
-import "github.com/daytonaio/daytona/pkg/types"
+import (
+	"github.com/daytonaio/daytona/pkg/containerregistry"
+	"github.com/daytonaio/daytona/pkg/workspace"
+)
 
 type ProviderInfo struct {
 	Name    string `json:"name"`
@@ -13,16 +19,18 @@ type InitializeProviderRequest struct {
 	ServerVersion     string
 	ServerUrl         string
 	ServerApiUrl      string
+	LogsDir           string
 }
 
 type WorkspaceRequest struct {
 	TargetOptions string
-	Workspace     *types.Workspace
+	Workspace     *workspace.Workspace
 }
 
 type ProjectRequest struct {
-	TargetOptions string
-	Project       *types.Project
+	TargetOptions     string
+	ContainerRegistry *containerregistry.ContainerRegistry
+	Project           *workspace.Project
 }
 
 type ProviderTarget struct {
@@ -55,6 +63,8 @@ type ProviderTargetProperty struct {
 	// DefaultValue is converted into the appropriate type based on the Type
 	// If the property is a FilePath, the DefaultValue is a path to a directory
 	DefaultValue string
+	// Brief description of the property
+	Description string
 	// Options is only used if the Type is ProviderTargetPropertyTypeOption
 	Options []string
 }

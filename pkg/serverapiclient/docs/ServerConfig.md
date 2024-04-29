@@ -5,14 +5,17 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **ApiPort** | Pointer to **int32** |  | [optional] 
+**BinariesPath** | Pointer to **string** |  | [optional] 
+**DefaultProjectImage** | Pointer to **string** |  | [optional] 
+**DefaultProjectPostStartCommands** | Pointer to **[]string** |  | [optional] 
+**DefaultProjectUser** | Pointer to **string** |  | [optional] 
 **Frps** | Pointer to [**FRPSConfig**](FRPSConfig.md) |  | [optional] 
-**GitProviders** | Pointer to [**[]GitProvider**](GitProvider.md) |  | [optional] 
 **HeadscalePort** | Pointer to **int32** |  | [optional] 
 **Id** | Pointer to **string** |  | [optional] 
+**LogFilePath** | Pointer to **string** |  | [optional] 
 **ProvidersDir** | Pointer to **string** |  | [optional] 
 **RegistryUrl** | Pointer to **string** |  | [optional] 
 **ServerDownloadUrl** | Pointer to **string** |  | [optional] 
-**TargetsFilePath** | Pointer to **string** |  | [optional] 
 
 ## Methods
 
@@ -58,6 +61,106 @@ SetApiPort sets ApiPort field to given value.
 
 HasApiPort returns a boolean if a field has been set.
 
+### GetBinariesPath
+
+`func (o *ServerConfig) GetBinariesPath() string`
+
+GetBinariesPath returns the BinariesPath field if non-nil, zero value otherwise.
+
+### GetBinariesPathOk
+
+`func (o *ServerConfig) GetBinariesPathOk() (*string, bool)`
+
+GetBinariesPathOk returns a tuple with the BinariesPath field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetBinariesPath
+
+`func (o *ServerConfig) SetBinariesPath(v string)`
+
+SetBinariesPath sets BinariesPath field to given value.
+
+### HasBinariesPath
+
+`func (o *ServerConfig) HasBinariesPath() bool`
+
+HasBinariesPath returns a boolean if a field has been set.
+
+### GetDefaultProjectImage
+
+`func (o *ServerConfig) GetDefaultProjectImage() string`
+
+GetDefaultProjectImage returns the DefaultProjectImage field if non-nil, zero value otherwise.
+
+### GetDefaultProjectImageOk
+
+`func (o *ServerConfig) GetDefaultProjectImageOk() (*string, bool)`
+
+GetDefaultProjectImageOk returns a tuple with the DefaultProjectImage field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetDefaultProjectImage
+
+`func (o *ServerConfig) SetDefaultProjectImage(v string)`
+
+SetDefaultProjectImage sets DefaultProjectImage field to given value.
+
+### HasDefaultProjectImage
+
+`func (o *ServerConfig) HasDefaultProjectImage() bool`
+
+HasDefaultProjectImage returns a boolean if a field has been set.
+
+### GetDefaultProjectPostStartCommands
+
+`func (o *ServerConfig) GetDefaultProjectPostStartCommands() []string`
+
+GetDefaultProjectPostStartCommands returns the DefaultProjectPostStartCommands field if non-nil, zero value otherwise.
+
+### GetDefaultProjectPostStartCommandsOk
+
+`func (o *ServerConfig) GetDefaultProjectPostStartCommandsOk() (*[]string, bool)`
+
+GetDefaultProjectPostStartCommandsOk returns a tuple with the DefaultProjectPostStartCommands field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetDefaultProjectPostStartCommands
+
+`func (o *ServerConfig) SetDefaultProjectPostStartCommands(v []string)`
+
+SetDefaultProjectPostStartCommands sets DefaultProjectPostStartCommands field to given value.
+
+### HasDefaultProjectPostStartCommands
+
+`func (o *ServerConfig) HasDefaultProjectPostStartCommands() bool`
+
+HasDefaultProjectPostStartCommands returns a boolean if a field has been set.
+
+### GetDefaultProjectUser
+
+`func (o *ServerConfig) GetDefaultProjectUser() string`
+
+GetDefaultProjectUser returns the DefaultProjectUser field if non-nil, zero value otherwise.
+
+### GetDefaultProjectUserOk
+
+`func (o *ServerConfig) GetDefaultProjectUserOk() (*string, bool)`
+
+GetDefaultProjectUserOk returns a tuple with the DefaultProjectUser field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetDefaultProjectUser
+
+`func (o *ServerConfig) SetDefaultProjectUser(v string)`
+
+SetDefaultProjectUser sets DefaultProjectUser field to given value.
+
+### HasDefaultProjectUser
+
+`func (o *ServerConfig) HasDefaultProjectUser() bool`
+
+HasDefaultProjectUser returns a boolean if a field has been set.
+
 ### GetFrps
 
 `func (o *ServerConfig) GetFrps() FRPSConfig`
@@ -82,31 +185,6 @@ SetFrps sets Frps field to given value.
 `func (o *ServerConfig) HasFrps() bool`
 
 HasFrps returns a boolean if a field has been set.
-
-### GetGitProviders
-
-`func (o *ServerConfig) GetGitProviders() []GitProvider`
-
-GetGitProviders returns the GitProviders field if non-nil, zero value otherwise.
-
-### GetGitProvidersOk
-
-`func (o *ServerConfig) GetGitProvidersOk() (*[]GitProvider, bool)`
-
-GetGitProvidersOk returns a tuple with the GitProviders field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetGitProviders
-
-`func (o *ServerConfig) SetGitProviders(v []GitProvider)`
-
-SetGitProviders sets GitProviders field to given value.
-
-### HasGitProviders
-
-`func (o *ServerConfig) HasGitProviders() bool`
-
-HasGitProviders returns a boolean if a field has been set.
 
 ### GetHeadscalePort
 
@@ -157,6 +235,31 @@ SetId sets Id field to given value.
 `func (o *ServerConfig) HasId() bool`
 
 HasId returns a boolean if a field has been set.
+
+### GetLogFilePath
+
+`func (o *ServerConfig) GetLogFilePath() string`
+
+GetLogFilePath returns the LogFilePath field if non-nil, zero value otherwise.
+
+### GetLogFilePathOk
+
+`func (o *ServerConfig) GetLogFilePathOk() (*string, bool)`
+
+GetLogFilePathOk returns a tuple with the LogFilePath field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetLogFilePath
+
+`func (o *ServerConfig) SetLogFilePath(v string)`
+
+SetLogFilePath sets LogFilePath field to given value.
+
+### HasLogFilePath
+
+`func (o *ServerConfig) HasLogFilePath() bool`
+
+HasLogFilePath returns a boolean if a field has been set.
 
 ### GetProvidersDir
 
@@ -232,31 +335,6 @@ SetServerDownloadUrl sets ServerDownloadUrl field to given value.
 `func (o *ServerConfig) HasServerDownloadUrl() bool`
 
 HasServerDownloadUrl returns a boolean if a field has been set.
-
-### GetTargetsFilePath
-
-`func (o *ServerConfig) GetTargetsFilePath() string`
-
-GetTargetsFilePath returns the TargetsFilePath field if non-nil, zero value otherwise.
-
-### GetTargetsFilePathOk
-
-`func (o *ServerConfig) GetTargetsFilePathOk() (*string, bool)`
-
-GetTargetsFilePathOk returns a tuple with the TargetsFilePath field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetTargetsFilePath
-
-`func (o *ServerConfig) SetTargetsFilePath(v string)`
-
-SetTargetsFilePath sets TargetsFilePath field to given value.
-
-### HasTargetsFilePath
-
-`func (o *ServerConfig) HasTargetsFilePath() bool`
-
-HasTargetsFilePath returns a boolean if a field has been set.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)

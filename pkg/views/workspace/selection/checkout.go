@@ -7,23 +7,33 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/daytonaio/daytona/pkg/gitprovider"
 	"github.com/daytonaio/daytona/pkg/views"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-func selectCheckoutPrompt(checkoutOptions []gitprovider.CheckoutOption, secondaryProjectOrder int, choiceChan chan<- string) {
+type CheckoutOption struct {
+	Title string
+	Id    string
+}
+
+var (
+	CheckoutDefault = CheckoutOption{Title: "Clone the default branch", Id: "default"}
+	CheckoutBranch  = CheckoutOption{Title: "Branches", Id: "branch"}
+	CheckoutPR      = CheckoutOption{Title: "Pull/Merge requests", Id: "pullrequest"}
+)
+
+func selectCheckoutPrompt(checkoutOptions []CheckoutOption, secondaryProjectOrder int, choiceChan chan<- string) {
 	items := []list.Item{}
 
 	for _, checkoutOption := range checkoutOptions {
-		newItem := item{id: checkoutOption.Id, title: checkoutOption.Title, choiceProperty: checkoutOption.Id}
+		newItem := item[string]{id: checkoutOption.Id, title: checkoutOption.Title, choiceProperty: checkoutOption.Id}
 		items = append(items, newItem)
 	}
 
 	l := views.GetStyledSelectList(items)
-	m := model{list: l}
+	m := model[string]{list: l}
 	m.list.Title = "CLONING OPTIONS"
 	if secondaryProjectOrder > 0 {
 		m.list.Title += fmt.Sprintf(" (Secondary Project #%d)", secondaryProjectOrder)
@@ -35,14 +45,14 @@ func selectCheckoutPrompt(checkoutOptions []gitprovider.CheckoutOption, secondar
 		os.Exit(1)
 	}
 
-	if m, ok := p.(model); ok && m.choice != "" {
-		choiceChan <- m.choice
+	if m, ok := p.(model[string]); ok && m.choice != nil {
+		choiceChan <- *m.choice
 	} else {
 		choiceChan <- ""
 	}
 }
 
-func GetCheckoutOptionFromPrompt(secondaryProjectOrder int, checkoutOptions []gitprovider.CheckoutOption) gitprovider.CheckoutOption {
+func GetCheckoutOptionFromPrompt(secondaryProjectOrder int, checkoutOptions []CheckoutOption) CheckoutOption {
 	choiceChan := make(chan string)
 
 	go selectCheckoutPrompt(checkoutOptions, secondaryProjectOrder, choiceChan)
@@ -54,5 +64,5 @@ func GetCheckoutOptionFromPrompt(secondaryProjectOrder int, checkoutOptions []gi
 			return checkoutOption
 		}
 	}
-	return gitprovider.CheckoutDefault
+	return CheckoutDefault
 }

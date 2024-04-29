@@ -13,9 +13,7 @@ import (
 	"github.com/daytonaio/daytona/pkg/cmd/output"
 	. "github.com/daytonaio/daytona/pkg/cmd/ports"
 	. "github.com/daytonaio/daytona/pkg/cmd/profile"
-	. "github.com/daytonaio/daytona/pkg/cmd/provider"
 	. "github.com/daytonaio/daytona/pkg/cmd/server"
-	. "github.com/daytonaio/daytona/pkg/cmd/target"
 	. "github.com/daytonaio/daytona/pkg/cmd/workspace"
 	view_util "github.com/daytonaio/daytona/pkg/views/util"
 	log "github.com/sirupsen/logrus"
@@ -29,13 +27,17 @@ var rootCmd = &cobra.Command{
 	Long:  "Daytona is a Dev Environment Manager",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Print(view_util.GetLongDescription())
-		cmd.Help()
+		err := cmd.Help()
+		if err != nil {
+			log.Fatal(err)
+		}
 	},
 }
 
 var originalStdout *os.File
 
 func Execute() {
+	rootCmd.AddCommand(AutoCompleteCmd)
 	rootCmd.AddCommand(InfoCmd)
 	rootCmd.AddCommand(StartCmd)
 	rootCmd.AddCommand(StopCmd)
@@ -43,7 +45,6 @@ func Execute() {
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(ListCmd)
 	rootCmd.AddCommand(GitProviderCmd)
-	rootCmd.AddCommand(TargetCmd)
 
 	if util.WorkspaceMode() {
 		rootCmd.AddCommand(gitCredCmd)
@@ -59,9 +60,10 @@ func Execute() {
 		rootCmd.AddCommand(ProfileCmd)
 		rootCmd.AddCommand(ProfileUseCmd)
 		rootCmd.AddCommand(whoamiCmd)
-		rootCmd.AddCommand(ProviderCmd)
+		rootCmd.AddCommand(purgeCmd)
 	}
 
+	rootCmd.CompletionOptions.HiddenDefaultCmd = true
 	rootCmd.PersistentFlags().BoolP("help", "", false, "help for daytona")
 	rootCmd.PersistentFlags().StringVarP(&output.FormatFlag, "output", "o", output.FormatFlag, `Output format. Must be one of (yaml, json)`)
 

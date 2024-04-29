@@ -6,33 +6,23 @@ package server
 import (
 	"errors"
 	"os"
-	"path"
+	"path/filepath"
 
 	"github.com/daytonaio/daytona/pkg/provider/manager"
-	"github.com/daytonaio/daytona/pkg/server/config"
-	"github.com/daytonaio/daytona/pkg/server/frpc"
-	"github.com/daytonaio/daytona/pkg/types"
 	log "github.com/sirupsen/logrus"
 )
 
-func downloadDefaultProviders() error {
-	c, err := config.GetConfig()
+func (s *Server) downloadDefaultProviders() error {
+	manifest, err := s.ProviderManager.GetProvidersManifest()
 	if err != nil {
 		return err
 	}
 
-	manifest, err := manager.GetProvidersManifest(c.RegistryUrl)
-	if err != nil {
-		return err
-	}
-
-	defaultProviderPlugins := manager.GetDefaultProviders(*manifest)
+	defaultProviders := manager.GetDefaultProviders(*manifest)
 
 	log.Info("Downloading default providers")
-	for pluginName, plugin := range defaultProviderPlugins {
-		log.Info("Downloading " + pluginName)
-		downloadPath := path.Join(c.ProvidersDir, pluginName, pluginName)
-		err = manager.DownloadProvider(plugin.DownloadUrls, downloadPath)
+	for providerName, provider := range defaultProviders {
+		_, err = s.ProviderManager.DownloadProvider(provider.DownloadUrls, providerName, false)
 		if err != nil {
 			log.Error(err)
 		}
@@ -43,10 +33,15 @@ func downloadDefaultProviders() error {
 	return nil
 }
 
-func registerProviders(c *types.ServerConfig) error {
+func (s *Server) registerProviders() error {
 	log.Info("Registering providers")
 
-	files, err := os.ReadDir(c.ProvidersDir)
+	manifest, err := s.ProviderManager.GetProvidersManifest()
+	if err != nil {
+		return err
+	}
+
+	files, err := os.ReadDir(s.config.ProvidersDir)
 	if err != nil {
 		if os.IsNotExist(err) {
 			log.Info("No providers found")
@@ -57,16 +52,33 @@ func registerProviders(c *types.ServerConfig) error {
 
 	for _, file := range files {
 		if file.IsDir() {
-			pluginPath, err := getPluginPath(path.Join(c.ProvidersDir, file.Name()))
+			pluginPath, err := s.getPluginPath(filepath.Join(s.config.ProvidersDir, file.Name()))
 			if err != nil {
 				log.Error(err)
 				continue
 			}
 
-			err = manager.RegisterProvider(pluginPath, c.ServerDownloadUrl, frpc.GetServerUrl(c), frpc.GetApiUrl(c))
+			err = s.ProviderManager.RegisterProvider(pluginPath)
 			if err != nil {
 				log.Error(err)
 				continue
+			}
+
+			// Check for updates
+			provider, err := s.ProviderManager.GetProvider(file.Name())
+			if err != nil {
+				log.Error(err)
+				continue
+			}
+
+			info, err := (*provider).GetInfo()
+			if err != nil {
+				log.Error(err)
+				continue
+			}
+
+			if manager.HasUpdateAvailable(info.Name, info.Version, *manifest) {
+				log.Infof("Update available for %s. Update with `daytona server provider update`.", info.Name)
 			}
 		}
 	}
@@ -76,7 +88,7 @@ func registerProviders(c *types.ServerConfig) error {
 	return nil
 }
 
-func getPluginPath(dir string) (string, error) {
+func (s *Server) getPluginPath(dir string) (string, error) {
 	files, err := os.ReadDir(dir)
 	if err != nil {
 		return "", err
@@ -84,7 +96,7 @@ func getPluginPath(dir string) (string, error) {
 
 	for _, file := range files {
 		if !file.IsDir() {
-			return path.Join(dir, file.Name()), nil
+			return filepath.Join(dir, file.Name()), nil
 		}
 	}
 

@@ -6,7 +6,379 @@ info:
   version: 0.1.0
 servers:
 - url: http://localhost:3000/
+security:
+- Bearer: []
 paths:
+  /apikey:
+    get:
+      description: List API keys
+      operationId: ListClientApiKeys
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/ApiKey'
+                type: array
+          description: OK
+      summary: List API keys
+      tags:
+      - apiKey
+  /apikey/{apiKeyName}:
+    delete:
+      description: Revoke API key
+      operationId: RevokeApiKey
+      parameters:
+      - description: API key name
+        in: path
+        name: apiKeyName
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content: {}
+          description: OK
+      summary: Revoke API key
+      tags:
+      - apiKey
+    post:
+      description: Generate an API key
+      operationId: GenerateApiKey
+      parameters:
+      - description: API key name
+        in: path
+        name: apiKeyName
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                type: string
+          description: OK
+      summary: Generate an API key
+      tags:
+      - apiKey
+  /container-registry:
+    get:
+      description: List container registries
+      operationId: ListContainerRegistries
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/ContainerRegistry'
+                type: array
+          description: OK
+      summary: List container registries
+      tags:
+      - container-registry
+  /container-registry/{server}:
+    delete:
+      description: Remove a container registry credentials
+      operationId: RemoveContainerRegistry
+      parameters:
+      - description: Container Registry server name
+        in: path
+        name: server
+        required: true
+        schema:
+          type: string
+      responses:
+        "204":
+          content: {}
+          description: No Content
+      summary: Remove a container registry credentials
+      tags:
+      - container-registry
+    get:
+      description: Get container registry credentials
+      operationId: GetContainerRegistry
+      parameters:
+      - description: Container Registry server name
+        in: path
+        name: server
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContainerRegistry'
+          description: OK
+      summary: Get container registry credentials
+      tags:
+      - container-registry
+    put:
+      description: Set container registry credentials
+      operationId: SetContainerRegistry
+      parameters:
+      - description: Container Registry server name
+        in: path
+        name: server
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          '*/*':
+            schema:
+              $ref: '#/components/schemas/ContainerRegistry'
+        description: Container Registry credentials to set
+        required: true
+      responses:
+        "201":
+          content: {}
+          description: Created
+      summary: Set container registry credentials
+      tags:
+      - container-registry
+      x-codegen-request-body-name: containerRegistry
+  /gitprovider:
+    get:
+      description: List Git providers
+      operationId: ListGitProviders
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/GitProvider'
+                type: array
+          description: OK
+      summary: List Git providers
+      tags:
+      - gitProvider
+    put:
+      description: Set Git provider
+      operationId: SetGitProvider
+      requestBody:
+        content:
+          '*/*':
+            schema:
+              $ref: '#/components/schemas/GitProvider'
+        description: Git provider
+        required: true
+      responses:
+        "200":
+          content: {}
+          description: OK
+      summary: Set Git provider
+      tags:
+      - gitProvider
+      x-codegen-request-body-name: gitProviderConfig
+  /gitprovider/context/{gitUrl}:
+    get:
+      description: Get Git context
+      operationId: GetGitContext
+      parameters:
+      - description: Git URL
+        in: path
+        name: gitUrl
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GitRepository'
+          description: OK
+      summary: Get Git context
+      tags:
+      - gitProvider
+  /gitprovider/for-url/{url}:
+    get:
+      description: Get Git provider
+      operationId: GetGitProviderForUrl
+      parameters:
+      - description: Url
+        in: path
+        name: url
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GitProvider'
+          description: OK
+      summary: Get Git provider
+      tags:
+      - gitProvider
+  /gitprovider/{gitProviderId}:
+    delete:
+      description: Remove Git provider
+      operationId: RemoveGitProvider
+      parameters:
+      - description: Git provider
+        in: path
+        name: gitProviderId
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content: {}
+          description: OK
+      summary: Remove Git provider
+      tags:
+      - gitProvider
+  /gitprovider/{gitProviderId}/namespaces:
+    get:
+      description: Get Git namespaces
+      operationId: GetNamespaces
+      parameters:
+      - description: Git provider
+        in: path
+        name: gitProviderId
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/GitNamespace'
+                type: array
+          description: OK
+      summary: Get Git namespaces
+      tags:
+      - gitProvider
+  /gitprovider/{gitProviderId}/user:
+    get:
+      description: Get Git context
+      operationId: GetGitUser
+      parameters:
+      - description: Git Provider Id
+        in: path
+        name: gitProviderId
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GitUser'
+          description: OK
+      summary: Get Git context
+      tags:
+      - gitProvider
+  /gitprovider/{gitProviderId}/{namespaceId}/repositories:
+    get:
+      description: Get Git repositories
+      operationId: GetRepositories
+      parameters:
+      - description: Git provider
+        in: path
+        name: gitProviderId
+        required: true
+        schema:
+          type: string
+      - description: Namespace
+        in: path
+        name: namespaceId
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/GitRepository'
+                type: array
+          description: OK
+      summary: Get Git repositories
+      tags:
+      - gitProvider
+  /gitprovider/{gitProviderId}/{namespaceId}/{repositoryId}/branches:
+    get:
+      description: Get Git repository branches
+      operationId: GetRepoBranches
+      parameters:
+      - description: Git provider
+        in: path
+        name: gitProviderId
+        required: true
+        schema:
+          type: string
+      - description: Namespace
+        in: path
+        name: namespaceId
+        required: true
+        schema:
+          type: string
+      - description: Repository
+        in: path
+        name: repositoryId
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/GitBranch'
+                type: array
+          description: OK
+      summary: Get Git repository branches
+      tags:
+      - gitProvider
+  /gitprovider/{gitProviderId}/{namespaceId}/{repositoryId}/pull-requests:
+    get:
+      description: Get Git repository PRs
+      operationId: GetRepoPRs
+      parameters:
+      - description: Git provider
+        in: path
+        name: gitProviderId
+        required: true
+        schema:
+          type: string
+      - description: Namespace
+        in: path
+        name: namespaceId
+        required: true
+        schema:
+          type: string
+      - description: Repository
+        in: path
+        name: repositoryId
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/GitPullRequest'
+                type: array
+          description: OK
+      summary: Get Git repository PRs
+      tags:
+      - gitProvider
   /provider:
     get:
       description: List providers
@@ -116,27 +488,6 @@ paths:
       tags:
       - server
       x-codegen-request-body-name: config
-  /server/get-git-context/{gitUrl}:
-    get:
-      description: Get Git context
-      operationId: GetGitContext
-      parameters:
-      - description: Git URL
-        in: path
-        name: gitUrl
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Repository'
-          description: OK
-      summary: Get Git context
-      tags:
-      - server
   /server/network-key:
     post:
       description: Generate a new authentication key
@@ -207,13 +558,19 @@ paths:
     get:
       description: List workspaces
       operationId: ListWorkspaces
+      parameters:
+      - description: Verbose
+        in: query
+        name: verbose
+        schema:
+          type: boolean
       responses:
         "200":
           content:
             application/json:
               schema:
                 items:
-                  $ref: '#/components/schemas/Workspace'
+                  $ref: '#/components/schemas/WorkspaceDTO'
                 type: array
           description: OK
       summary: List workspaces
@@ -226,7 +583,7 @@ paths:
         content:
           '*/*':
             schema:
-              $ref: '#/components/schemas/CreateWorkspace'
+              $ref: '#/components/schemas/CreateWorkspaceRequest'
         description: Create workspace
         required: true
       responses:
@@ -262,7 +619,7 @@ paths:
       description: Get workspace info
       operationId: GetWorkspace
       parameters:
-      - description: Workspace ID
+      - description: Workspace ID or Name
         in: path
         name: workspaceId
         required: true
@@ -273,7 +630,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Workspace'
+                $ref: '#/components/schemas/WorkspaceDTO'
           description: OK
       summary: Get workspace info
       tags:
@@ -283,7 +640,7 @@ paths:
       description: Start workspace
       operationId: StartWorkspace
       parameters:
-      - description: Workspace ID
+      - description: Workspace ID or Name
         in: path
         name: workspaceId
         required: true
@@ -301,7 +658,7 @@ paths:
       description: Stop workspace
       operationId: StopWorkspace
       parameters:
-      - description: Workspace ID
+      - description: Workspace ID or Name
         in: path
         name: workspaceId
         required: true
@@ -319,7 +676,7 @@ paths:
       description: Start project
       operationId: StartProject
       parameters:
-      - description: Workspace ID
+      - description: Workspace ID or Name
         in: path
         name: workspaceId
         required: true
@@ -338,12 +695,44 @@ paths:
       summary: Start project
       tags:
       - workspace
+  /workspace/{workspaceId}/{projectId}/state:
+    post:
+      description: Set project state
+      operationId: SetProjectState
+      parameters:
+      - description: Workspace ID or Name
+        in: path
+        name: workspaceId
+        required: true
+        schema:
+          type: string
+      - description: Project ID
+        in: path
+        name: projectId
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          '*/*':
+            schema:
+              $ref: '#/components/schemas/SetProjectState'
+        description: Set State
+        required: true
+      responses:
+        "200":
+          content: {}
+          description: OK
+      summary: Set project state
+      tags:
+      - workspace
+      x-codegen-request-body-name: setState
   /workspace/{workspaceId}/{projectId}/stop:
     post:
       description: Stop project
       operationId: StopProject
       parameters:
-      - description: Workspace ID
+      - description: Workspace ID or Name
         in: path
         name: workspaceId
         required: true
@@ -364,38 +753,147 @@ paths:
       - workspace
 components:
   schemas:
-    CreateWorkspace:
+    ApiKey:
       example:
-        repositories:
-        - owner: owner
-          path: path
-          name: name
-          id: id
-          source: source
-          prNumber: 0
-          branch: branch
-          sha: sha
-          url: url
-        - owner: owner
-          path: path
-          name: name
-          id: id
-          source: source
-          prNumber: 0
-          branch: branch
-          sha: sha
-          url: url
+        keyHash: keyHash
         name: name
+        type: null
+      properties:
+        keyHash:
+          type: string
+        name:
+          description: Project or client name
+          type: string
+        type:
+          $ref: '#/components/schemas/apikey.ApiKeyType'
+      type: object
+    ContainerRegistry:
+      example:
+        server: server
+        password: password
+        username: username
+      properties:
+        password:
+          type: string
+        server:
+          type: string
+        username:
+          type: string
+      type: object
+    CreateWorkspaceRequest:
+      example:
+        projects:
+        - image: image
+          postStartCommands:
+          - postStartCommands
+          - postStartCommands
+          envVars:
+            key: envVars
+          name: name
+          source:
+            repository:
+              owner: owner
+              path: path
+              name: name
+              id: id
+              source: source
+              prNumber: 0
+              branch: branch
+              sha: sha
+              url: url
+          user: user
+        - image: image
+          postStartCommands:
+          - postStartCommands
+          - postStartCommands
+          envVars:
+            key: envVars
+          name: name
+          source:
+            repository:
+              owner: owner
+              path: path
+              name: name
+              id: id
+              source: source
+              prNumber: 0
+              branch: branch
+              sha: sha
+              url: url
+          user: user
+        name: name
+        id: id
         target: target
       properties:
+        id:
+          type: string
         name:
           type: string
-        repositories:
+        projects:
           items:
-            $ref: '#/components/schemas/Repository'
+            $ref: '#/components/schemas/CreateWorkspaceRequestProject'
           type: array
         target:
           type: string
+      required:
+      - projects
+      type: object
+    CreateWorkspaceRequestProject:
+      example:
+        image: image
+        postStartCommands:
+        - postStartCommands
+        - postStartCommands
+        envVars:
+          key: envVars
+        name: name
+        source:
+          repository:
+            owner: owner
+            path: path
+            name: name
+            id: id
+            source: source
+            prNumber: 0
+            branch: branch
+            sha: sha
+            url: url
+        user: user
+      properties:
+        envVars:
+          additionalProperties:
+            type: string
+          type: object
+        image:
+          type: string
+        name:
+          type: string
+        postStartCommands:
+          items:
+            type: string
+          type: array
+        source:
+          $ref: '#/components/schemas/CreateWorkspaceRequestProjectSource'
+        user:
+          type: string
+      required:
+      - name
+      type: object
+    CreateWorkspaceRequestProjectSource:
+      example:
+        repository:
+          owner: owner
+          path: path
+          name: name
+          id: id
+          source: source
+          prNumber: 0
+          branch: branch
+          sha: sha
+          url: url
+      properties:
+        repository:
+          $ref: '#/components/schemas/GitRepository'
       type: object
     FRPSConfig:
       example:
@@ -410,15 +908,95 @@ components:
         protocol:
           type: string
       type: object
+    GitBranch:
+      example:
+        name: name
+        sha: sha
+      properties:
+        name:
+          type: string
+        sha:
+          type: string
+      type: object
+    GitNamespace:
+      example:
+        name: name
+        id: id
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      type: object
     GitProvider:
       example:
+        baseApiUrl: baseApiUrl
         id: id
         token: token
         username: username
       properties:
+        baseApiUrl:
+          type: string
         id:
           type: string
         token:
+          type: string
+        username:
+          type: string
+      type: object
+    GitPullRequest:
+      example:
+        name: name
+        branch: branch
+      properties:
+        branch:
+          type: string
+        name:
+          type: string
+      type: object
+    GitRepository:
+      example:
+        owner: owner
+        path: path
+        name: name
+        id: id
+        source: source
+        prNumber: 0
+        branch: branch
+        sha: sha
+        url: url
+      properties:
+        branch:
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        owner:
+          type: string
+        path:
+          type: string
+        prNumber:
+          type: integer
+        sha:
+          type: string
+        source:
+          type: string
+        url:
+          type: string
+      type: object
+    GitUser:
+      example:
+        name: name
+        id: id
+        email: email
+        username: username
+      properties:
+        email:
+          type: string
+        id:
+          type: string
+        name:
           type: string
         username:
           type: string
@@ -445,7 +1023,14 @@ components:
       type: object
     Project:
       example:
+        image: image
+        postStartCommands:
+        - postStartCommands
+        - postStartCommands
         name: name
+        state:
+          updatedAt: updatedAt
+          uptime: 0
         repository:
           owner: owner
           path: path
@@ -456,14 +1041,25 @@ components:
           branch: branch
           sha: sha
           url: url
+        user: user
         target: target
         workspaceId: workspaceId
       properties:
+        image:
+          type: string
         name:
           type: string
+        postStartCommands:
+          items:
+            type: string
+          type: array
         repository:
-          $ref: '#/components/schemas/Repository'
+          $ref: '#/components/schemas/GitRepository'
+        state:
+          $ref: '#/components/schemas/ProjectState'
         target:
+          type: string
+        user:
           type: string
         workspaceId:
           type: string
@@ -474,13 +1070,9 @@ components:
         isRunning: true
         created: created
         name: name
-        finished: finished
-        started: started
         workspaceId: workspaceId
       properties:
         created:
-          type: string
-        finished:
           type: string
         isRunning:
           type: boolean
@@ -488,10 +1080,18 @@ components:
           type: string
         providerMetadata:
           type: string
-        started:
-          type: string
         workspaceId:
           type: string
+      type: object
+    ProjectState:
+      example:
+        updatedAt: updatedAt
+        uptime: 0
+      properties:
+        updatedAt:
+          type: string
+        uptime:
+          type: integer
       type: object
     Provider:
       example:
@@ -523,53 +1123,21 @@ components:
       additionalProperties:
         $ref: '#/components/schemas/provider.ProviderTargetProperty'
       type: object
-    Repository:
-      example:
-        owner: owner
-        path: path
-        name: name
-        id: id
-        source: source
-        prNumber: 0
-        branch: branch
-        sha: sha
-        url: url
-      properties:
-        branch:
-          type: string
-        id:
-          type: string
-        name:
-          type: string
-        owner:
-          type: string
-        path:
-          type: string
-        prNumber:
-          type: integer
-        sha:
-          type: string
-        source:
-          type: string
-        url:
-          type: string
-      type: object
     ServerConfig:
       example:
         registryUrl: registryUrl
         apiPort: 0
         headscalePort: 1
         serverDownloadUrl: serverDownloadUrl
+        binariesPath: binariesPath
+        logFilePath: logFilePath
+        defaultProjectImage: defaultProjectImage
+        defaultProjectUser: defaultProjectUser
         providersDir: providersDir
         id: id
-        targetsFilePath: targetsFilePath
-        gitProviders:
-        - id: id
-          token: token
-          username: username
-        - id: id
-          token: token
-          username: username
+        defaultProjectPostStartCommands:
+        - defaultProjectPostStartCommands
+        - defaultProjectPostStartCommands
         frps:
           protocol: protocol
           port: 6
@@ -577,15 +1145,23 @@ components:
       properties:
         apiPort:
           type: integer
+        binariesPath:
+          type: string
+        defaultProjectImage:
+          type: string
+        defaultProjectPostStartCommands:
+          items:
+            type: string
+          type: array
+        defaultProjectUser:
+          type: string
         frps:
           $ref: '#/components/schemas/FRPSConfig'
-        gitProviders:
-          items:
-            $ref: '#/components/schemas/GitProvider'
-          type: array
         headscalePort:
           type: integer
         id:
+          type: string
+        logFilePath:
           type: string
         providersDir:
           type: string
@@ -593,13 +1169,25 @@ components:
           type: string
         serverDownloadUrl:
           type: string
-        targetsFilePath:
-          type: string
+      type: object
+    SetProjectState:
+      example:
+        uptime: 0
+      properties:
+        uptime:
+          type: integer
       type: object
     Workspace:
       example:
         projects:
-        - name: name
+        - image: image
+          postStartCommands:
+          - postStartCommands
+          - postStartCommands
+          name: name
+          state:
+            updatedAt: updatedAt
+            uptime: 0
           repository:
             owner: owner
             path: path
@@ -610,9 +1198,17 @@ components:
             branch: branch
             sha: sha
             url: url
+          user: user
           target: target
           workspaceId: workspaceId
-        - name: name
+        - image: image
+          postStartCommands:
+          - postStartCommands
+          - postStartCommands
+          name: name
+          state:
+            updatedAt: updatedAt
+            uptime: 0
           repository:
             owner: owner
             path: path
@@ -623,6 +1219,67 @@ components:
             branch: branch
             sha: sha
             url: url
+          user: user
+          target: target
+          workspaceId: workspaceId
+        name: name
+        id: id
+        target: target
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        projects:
+          items:
+            $ref: '#/components/schemas/Project'
+          type: array
+        target:
+          type: string
+      type: object
+    WorkspaceDTO:
+      example:
+        projects:
+        - image: image
+          postStartCommands:
+          - postStartCommands
+          - postStartCommands
+          name: name
+          state:
+            updatedAt: updatedAt
+            uptime: 0
+          repository:
+            owner: owner
+            path: path
+            name: name
+            id: id
+            source: source
+            prNumber: 0
+            branch: branch
+            sha: sha
+            url: url
+          user: user
+          target: target
+          workspaceId: workspaceId
+        - image: image
+          postStartCommands:
+          - postStartCommands
+          - postStartCommands
+          name: name
+          state:
+            updatedAt: updatedAt
+            uptime: 0
+          repository:
+            owner: owner
+            path: path
+            name: name
+            id: id
+            source: source
+            prNumber: 0
+            branch: branch
+            sha: sha
+            url: url
+          user: user
           target: target
           workspaceId: workspaceId
         name: name
@@ -633,15 +1290,11 @@ components:
             isRunning: true
             created: created
             name: name
-            finished: finished
-            started: started
             workspaceId: workspaceId
           - providerMetadata: providerMetadata
             isRunning: true
             created: created
             name: name
-            finished: finished
-            started: started
             workspaceId: workspaceId
           providerMetadata: providerMetadata
           name: name
@@ -667,15 +1320,11 @@ components:
           isRunning: true
           created: created
           name: name
-          finished: finished
-          started: started
           workspaceId: workspaceId
         - providerMetadata: providerMetadata
           isRunning: true
           created: created
           name: name
-          finished: finished
-          started: started
           workspaceId: workspaceId
         providerMetadata: providerMetadata
         name: name
@@ -689,6 +1338,14 @@ components:
         providerMetadata:
           type: string
       type: object
+    apikey.ApiKeyType:
+      enum:
+      - client
+      - project
+      type: string
+      x-enum-varnames:
+      - ApiKeyTypeClient
+      - ApiKeyTypeProject
     provider.ProviderInfo:
       example:
         name: name
@@ -705,6 +1362,9 @@ components:
           description: |-
             DefaultValue is converted into the appropriate type based on the Type
             If the property is a FilePath, the DefaultValue is a path to a directory
+          type: string
+        description:
+          description: Brief description of the property
           type: string
         disabledPredicate:
           description: |-
@@ -738,4 +1398,10 @@ components:
       - ProviderTargetPropertyTypeInt
       - ProviderTargetPropertyTypeFloat
       - ProviderTargetPropertyTypeFilePath
+  securitySchemes:
+    Bearer:
+      description: '"Type ''Bearer TOKEN'' to correctly set the API Key"'
+      in: header
+      name: Authorization
+      type: apiKey
 x-original-swagger-version: "2.0"

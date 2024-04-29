@@ -5,13 +5,11 @@ package workspace
 
 import (
 	"context"
-	"os"
-	"os/exec"
 
 	"github.com/daytonaio/daytona/cmd/daytona/config"
-	"github.com/daytonaio/daytona/internal/util"
 	"github.com/daytonaio/daytona/internal/util/apiclient"
 	"github.com/daytonaio/daytona/internal/util/apiclient/server"
+	"github.com/daytonaio/daytona/pkg/ide"
 	"github.com/daytonaio/daytona/pkg/views/workspace/selection"
 
 	log "github.com/sirupsen/logrus"
@@ -19,7 +17,7 @@ import (
 )
 
 var SshCmd = &cobra.Command{
-	Use:   "ssh [WORKSPACE_NAME] [PROJECT_NAME]",
+	Use:   "ssh [WORKSPACE] [PROJECT]",
 	Short: "SSH into a project using the terminal",
 	Args:  cobra.RangeArgs(0, 2),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -34,7 +32,7 @@ var SshCmd = &cobra.Command{
 		}
 
 		ctx := context.Background()
-		var workspaceName string
+		var workspaceId string
 		var projectName string
 
 		apiClient, err := server.GetApiClient(&activeProfile)
@@ -48,19 +46,22 @@ var SshCmd = &cobra.Command{
 				log.Fatal(apiclient.HandleErrorResponse(res, err))
 			}
 
-			workspaceName = selection.GetWorkspaceNameFromPrompt(workspaceList, "ssh into")
+			workspace := selection.GetWorkspaceFromPrompt(workspaceList, "ssh into")
+			if workspace == nil {
+				return
+			}
+			workspaceId = *workspace.Id
 		} else {
-			workspaceName = args[0]
-		}
-
-		wsName, wsMode := os.LookupEnv("DAYTONA_WS_NAME")
-		if wsMode {
-			workspaceName = wsName
+			workspace, err := server.GetWorkspace(args[0])
+			if err != nil {
+				log.Fatal(err)
+			}
+			workspaceId = *workspace.Id
 		}
 
 		// Todo: make project_select_prompt view for 0 args
 		if len(args) == 0 || len(args) == 1 {
-			projectName, err = util.GetFirstWorkspaceProjectName(workspaceName, projectName, &activeProfile)
+			projectName, err = server.GetFirstWorkspaceProjectName(workspaceId, projectName, &activeProfile)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -70,21 +71,19 @@ var SshCmd = &cobra.Command{
 			projectName = args[1]
 		}
 
-		err = config.EnsureSshConfigEntryAdded(activeProfile.Id, workspaceName, projectName)
+		err = ide.OpenTerminalSsh(activeProfile, workspaceId, projectName)
 		if err != nil {
 			log.Fatal(err)
 		}
-
-		projectHostname := config.GetProjectHostname(activeProfile.Id, workspaceName, projectName)
-
-		sshCommand := exec.Command("ssh", projectHostname)
-		sshCommand.Stdin = cmd.InOrStdin()
-		sshCommand.Stdout = cmd.OutOrStdout()
-		sshCommand.Stderr = cmd.ErrOrStderr()
-
-		err = sshCommand.Run()
-		if err != nil {
-			log.Fatal(err)
+	},
+	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		if len(args) >= 2 {
+			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
+		if len(args) == 1 {
+			return getProjectNameCompletions(cmd, args, toComplete)
+		}
+
+		return getWorkspaceNameCompletions()
 	},
 }

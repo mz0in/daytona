@@ -8,19 +8,13 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"strings"
 
-	"github.com/daytonaio/daytona/internal/util/apiclient"
 	"github.com/daytonaio/daytona/internal/util/apiclient/server"
-	"github.com/daytonaio/daytona/pkg/serverapiclient"
 	"github.com/spf13/cobra"
 )
-
-type GitCredentials struct {
-	Username string `json:"username"`
-	Token    string `json:"token"`
-}
 
 var gitCredCmd = &cobra.Command{
 	Use:     "git-cred get",
@@ -44,52 +38,17 @@ var gitCredCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		var gitCredentials GitCredentials
-		serverConfig, res, err := apiClient.ServerAPI.GetConfig(ctx).Execute()
-		if err != nil {
-			log.Fatal(apiclient.HandleErrorResponse(res, err))
-		}
-
-		gitProviderId := getGitProviderIdFromHost(host)
-		if gitProviderId == "" {
-			fmt.Println("error: unable to determine git provider")
-			return
-		}
-
-		var gitProvider *serverapiclient.GitProvider
-		for _, provider := range serverConfig.GitProviders {
-			if *provider.Id == gitProviderId {
-				gitProvider = &provider
-				break
-			}
-		}
-
+		encodedUrl := url.QueryEscape(host)
+		gitProvider, _, _ := apiClient.GitProviderAPI.GetGitProviderForUrl(ctx, encodedUrl).Execute()
 		if gitProvider == nil {
 			fmt.Println("error: git provider not found")
 			os.Exit(1)
 			return
 		}
 
-		gitCredentials = GitCredentials{
-			Username: *gitProvider.Username,
-			Token:    *gitProvider.Token,
-		}
-
-		fmt.Println("username=" + gitCredentials.Username)
-		fmt.Println("password=" + gitCredentials.Token)
+		fmt.Println("username=" + *gitProvider.Username)
+		fmt.Println("password=" + *gitProvider.Token)
 	},
-}
-
-func getGitProviderIdFromHost(url string) string {
-	if strings.Contains(url, "github.com") {
-		return "github"
-	} else if strings.Contains(url, "gitlab.com") {
-		return "gitlab"
-	} else if strings.Contains(url, "bitbucket.org") {
-		return "bitbucket"
-	} else {
-		return ""
-	}
 }
 
 func parseFromStdin() (map[string]string, error) {

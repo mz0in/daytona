@@ -10,6 +10,8 @@ import (
 	"github.com/daytonaio/daytona/cmd/daytona/config"
 	"github.com/daytonaio/daytona/internal/util/apiclient"
 	"github.com/daytonaio/daytona/internal/util/apiclient/server"
+	"github.com/daytonaio/daytona/pkg/cmd/output"
+	gitprovider_view "github.com/daytonaio/daytona/pkg/views/gitprovider"
 	"github.com/daytonaio/daytona/pkg/views/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -25,33 +27,38 @@ var GitProviderCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		serverConfig, res, err := apiClient.ServerAPI.GetConfig(context.Background()).Execute()
+		gitProviders, res, err := apiClient.GitProviderAPI.ListGitProviders(context.Background()).Execute()
 		if err != nil {
 			log.Fatal(apiclient.HandleErrorResponse(res, err))
 		}
 
-		if len(serverConfig.GitProviders) == 0 {
+		if len(gitProviders) == 0 {
 			util.RenderInfoMessage("No git providers registered. Add a new git provider by preparing a Personal Access Token and running 'daytona git-providers add'")
 			return
 		}
 
 		util.RenderMainTitle("Registered Git providers:")
 
-		availableGitProviderViews := config.GetGitProviderList()
-		var gitProviderViewList []config.GitProvider
+		supportedProviders := config.GetSupportedGitProviders()
+		var gitProviderViewList []gitprovider_view.GitProviderView
 
-		for _, gitProvider := range serverConfig.GitProviders {
-			for _, availableGitProviderView := range availableGitProviderViews {
-				if *gitProvider.Id == availableGitProviderView.Id {
+		for _, gitProvider := range gitProviders {
+			for _, supportedProvider := range supportedProviders {
+				if *gitProvider.Id == supportedProvider.Id {
 					gitProviderViewList = append(gitProviderViewList,
-						config.GitProvider{
+						gitprovider_view.GitProviderView{
 							Id:       *gitProvider.Id,
-							Name:     availableGitProviderView.Name,
+							Name:     supportedProvider.Name,
 							Username: *gitProvider.Username,
 						},
 					)
 				}
 			}
+		}
+
+		if output.FormatFlag != "" {
+			output.Output = gitProviderViewList
+			return
 		}
 
 		for _, gitProviderView := range gitProviderViewList {

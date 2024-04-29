@@ -19,10 +19,14 @@ var _ MappedNullable = &Project{}
 
 // Project struct for Project
 type Project struct {
-	Name *string `json:"name,omitempty"`
-	Repository *Repository `json:"repository,omitempty"`
-	Target *string `json:"target,omitempty"`
-	WorkspaceId *string `json:"workspaceId,omitempty"`
+	Image             *string        `json:"image,omitempty"`
+	Name              *string        `json:"name,omitempty"`
+	PostStartCommands []string       `json:"postStartCommands,omitempty"`
+	Repository        *GitRepository `json:"repository,omitempty"`
+	State             *ProjectState  `json:"state,omitempty"`
+	Target            *string        `json:"target,omitempty"`
+	User              *string        `json:"user,omitempty"`
+	WorkspaceId       *string        `json:"workspaceId,omitempty"`
 }
 
 // NewProject instantiates a new Project object
@@ -40,6 +44,38 @@ func NewProject() *Project {
 func NewProjectWithDefaults() *Project {
 	this := Project{}
 	return &this
+}
+
+// GetImage returns the Image field value if set, zero value otherwise.
+func (o *Project) GetImage() string {
+	if o == nil || IsNil(o.Image) {
+		var ret string
+		return ret
+	}
+	return *o.Image
+}
+
+// GetImageOk returns a tuple with the Image field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *Project) GetImageOk() (*string, bool) {
+	if o == nil || IsNil(o.Image) {
+		return nil, false
+	}
+	return o.Image, true
+}
+
+// HasImage returns a boolean if a field has been set.
+func (o *Project) HasImage() bool {
+	if o != nil && !IsNil(o.Image) {
+		return true
+	}
+
+	return false
+}
+
+// SetImage gets a reference to the given string and assigns it to the Image field.
+func (o *Project) SetImage(v string) {
+	o.Image = &v
 }
 
 // GetName returns the Name field value if set, zero value otherwise.
@@ -74,10 +110,42 @@ func (o *Project) SetName(v string) {
 	o.Name = &v
 }
 
+// GetPostStartCommands returns the PostStartCommands field value if set, zero value otherwise.
+func (o *Project) GetPostStartCommands() []string {
+	if o == nil || IsNil(o.PostStartCommands) {
+		var ret []string
+		return ret
+	}
+	return o.PostStartCommands
+}
+
+// GetPostStartCommandsOk returns a tuple with the PostStartCommands field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *Project) GetPostStartCommandsOk() ([]string, bool) {
+	if o == nil || IsNil(o.PostStartCommands) {
+		return nil, false
+	}
+	return o.PostStartCommands, true
+}
+
+// HasPostStartCommands returns a boolean if a field has been set.
+func (o *Project) HasPostStartCommands() bool {
+	if o != nil && !IsNil(o.PostStartCommands) {
+		return true
+	}
+
+	return false
+}
+
+// SetPostStartCommands gets a reference to the given []string and assigns it to the PostStartCommands field.
+func (o *Project) SetPostStartCommands(v []string) {
+	o.PostStartCommands = v
+}
+
 // GetRepository returns the Repository field value if set, zero value otherwise.
-func (o *Project) GetRepository() Repository {
+func (o *Project) GetRepository() GitRepository {
 	if o == nil || IsNil(o.Repository) {
-		var ret Repository
+		var ret GitRepository
 		return ret
 	}
 	return *o.Repository
@@ -85,7 +153,7 @@ func (o *Project) GetRepository() Repository {
 
 // GetRepositoryOk returns a tuple with the Repository field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-func (o *Project) GetRepositoryOk() (*Repository, bool) {
+func (o *Project) GetRepositoryOk() (*GitRepository, bool) {
 	if o == nil || IsNil(o.Repository) {
 		return nil, false
 	}
@@ -101,9 +169,41 @@ func (o *Project) HasRepository() bool {
 	return false
 }
 
-// SetRepository gets a reference to the given Repository and assigns it to the Repository field.
-func (o *Project) SetRepository(v Repository) {
+// SetRepository gets a reference to the given GitRepository and assigns it to the Repository field.
+func (o *Project) SetRepository(v GitRepository) {
 	o.Repository = &v
+}
+
+// GetState returns the State field value if set, zero value otherwise.
+func (o *Project) GetState() ProjectState {
+	if o == nil || IsNil(o.State) {
+		var ret ProjectState
+		return ret
+	}
+	return *o.State
+}
+
+// GetStateOk returns a tuple with the State field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *Project) GetStateOk() (*ProjectState, bool) {
+	if o == nil || IsNil(o.State) {
+		return nil, false
+	}
+	return o.State, true
+}
+
+// HasState returns a boolean if a field has been set.
+func (o *Project) HasState() bool {
+	if o != nil && !IsNil(o.State) {
+		return true
+	}
+
+	return false
+}
+
+// SetState gets a reference to the given ProjectState and assigns it to the State field.
+func (o *Project) SetState(v ProjectState) {
+	o.State = &v
 }
 
 // GetTarget returns the Target field value if set, zero value otherwise.
@@ -136,6 +236,38 @@ func (o *Project) HasTarget() bool {
 // SetTarget gets a reference to the given string and assigns it to the Target field.
 func (o *Project) SetTarget(v string) {
 	o.Target = &v
+}
+
+// GetUser returns the User field value if set, zero value otherwise.
+func (o *Project) GetUser() string {
+	if o == nil || IsNil(o.User) {
+		var ret string
+		return ret
+	}
+	return *o.User
+}
+
+// GetUserOk returns a tuple with the User field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *Project) GetUserOk() (*string, bool) {
+	if o == nil || IsNil(o.User) {
+		return nil, false
+	}
+	return o.User, true
+}
+
+// HasUser returns a boolean if a field has been set.
+func (o *Project) HasUser() bool {
+	if o != nil && !IsNil(o.User) {
+		return true
+	}
+
+	return false
+}
+
+// SetUser gets a reference to the given string and assigns it to the User field.
+func (o *Project) SetUser(v string) {
+	o.User = &v
 }
 
 // GetWorkspaceId returns the WorkspaceId field value if set, zero value otherwise.
@@ -171,7 +303,7 @@ func (o *Project) SetWorkspaceId(v string) {
 }
 
 func (o Project) MarshalJSON() ([]byte, error) {
-	toSerialize,err := o.ToMap()
+	toSerialize, err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -180,14 +312,26 @@ func (o Project) MarshalJSON() ([]byte, error) {
 
 func (o Project) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
+	if !IsNil(o.Image) {
+		toSerialize["image"] = o.Image
+	}
 	if !IsNil(o.Name) {
 		toSerialize["name"] = o.Name
+	}
+	if !IsNil(o.PostStartCommands) {
+		toSerialize["postStartCommands"] = o.PostStartCommands
 	}
 	if !IsNil(o.Repository) {
 		toSerialize["repository"] = o.Repository
 	}
+	if !IsNil(o.State) {
+		toSerialize["state"] = o.State
+	}
 	if !IsNil(o.Target) {
 		toSerialize["target"] = o.Target
+	}
+	if !IsNil(o.User) {
+		toSerialize["user"] = o.User
 	}
 	if !IsNil(o.WorkspaceId) {
 		toSerialize["workspaceId"] = o.WorkspaceId
@@ -230,5 +374,3 @@ func (v *NullableProject) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

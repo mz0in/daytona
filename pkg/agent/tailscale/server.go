@@ -7,25 +7,29 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"net/netip"
-	"os"
 
 	"github.com/daytonaio/daytona/internal/util/apiclient"
 	"github.com/daytonaio/daytona/internal/util/apiclient/server"
-	"github.com/daytonaio/daytona/pkg/agent/config"
 	"github.com/daytonaio/daytona/pkg/serverapiclient"
 	"tailscale.com/tsnet"
+
+	log "github.com/sirupsen/logrus"
 )
 
-func Start(c *config.Config) error {
+type Server struct {
+	Hostname  string
+	ServerUrl string
+}
+
+func (s *Server) Start() error {
 	flag.Parse()
-	s := new(tsnet.Server)
-	s.Hostname = fmt.Sprintf("%s-%s", os.Getenv("DAYTONA_WS_ID"), os.Getenv("DAYTONA_WS_PROJECT_NAME"))
-	s.ControlURL = c.Server.Url
-	s.Ephemeral = true
+	tsnetServer := new(tsnet.Server)
+	tsnetServer.Hostname = s.Hostname
+	tsnetServer.ControlURL = s.ServerUrl
+	tsnetServer.Ephemeral = true
 
 	apiClient, err := server.GetApiClient(nil)
 	if err != nil {
@@ -37,24 +41,24 @@ func Start(c *config.Config) error {
 		log.Fatal(apiclient.HandleErrorResponse(res, err))
 	}
 
-	s.AuthKey = *networkKey.Key
+	tsnetServer.AuthKey = *networkKey.Key
 
-	defer s.Close()
-	ln, err := s.Listen("tcp", ":80")
+	defer tsnetServer.Close()
+	ln, err := tsnetServer.Listen("tcp", ":80")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	defer ln.Close()
 
-	s.RegisterFallbackTCPHandler(func(src, dest netip.AddrPort) (handler func(net.Conn), intercept bool) {
+	tsnetServer.RegisterFallbackTCPHandler(func(src, dest netip.AddrPort) (handler func(net.Conn), intercept bool) {
 		destPort := dest.Port()
 
 		return func(src net.Conn) {
 			defer src.Close()
 			dst, err := net.Dial("tcp", fmt.Sprintf("localhost:%d", destPort))
 			if err != nil {
-				log.Printf("Dial failed: %v", err)
+				log.Errorf("Dial failed: %v", err)
 				return
 			}
 			defer dst.Close()

@@ -20,20 +20,30 @@ var profileAddCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		c, err := config.GetConfig()
 		if err != nil {
-			log.Fatal(err)
+			if !config.IsNotExist(err) {
+				log.Fatal(err)
+			}
+
+			c = &config.Config{
+				DefaultIdeId: config.DefaultIdeId,
+				Profiles:     []config.Profile{},
+			}
+
+			if err := c.Save(); err != nil {
+				log.Fatal(err)
+			}
 		}
 
 		profileAddView := profile.ProfileAddView{
 			ProfileName: profileNameFlag,
 			ApiUrl:      apiUrlFlag,
+			ApiKey:      apiKeyFlag,
 		}
 
-		if profileAddView.ProfileName != "" && profileAddView.ApiUrl != "" {
+		if profileAddView.ProfileName != "" && profileAddView.ApiUrl != "" && profileAddView.ApiKey != "" {
 			_, err = addProfile(profileAddView, c, true)
-		}
-
-		if profileNameFlag == "" || apiUrlFlag == "" {
-			_, err = CreateProfile(c, nil, true)
+		} else {
+			_, err = CreateProfile(c, &profileAddView, true)
 		}
 
 		if err != nil {
@@ -47,6 +57,7 @@ func CreateProfile(c *config.Config, profileAddView *profile.ProfileAddView, not
 		profileAddView = &profile.ProfileAddView{
 			ProfileName: "",
 			ApiUrl:      "",
+			ApiKey:      "",
 		}
 	}
 
@@ -61,6 +72,7 @@ func addProfile(profileView profile.ProfileAddView, c *config.Config, notify boo
 		Name: profileView.ProfileName,
 		Api: config.ServerApi{
 			Url: profileView.ApiUrl,
+			Key: profileView.ApiKey,
 		},
 	}
 
@@ -82,8 +94,10 @@ func addProfile(profileView profile.ProfileAddView, c *config.Config, notify boo
 
 var profileNameFlag string
 var apiUrlFlag string
+var apiKeyFlag string
 
 func init() {
 	profileAddCmd.Flags().StringVarP(&profileNameFlag, "name", "n", "", "Profile name")
 	profileAddCmd.Flags().StringVarP(&apiUrlFlag, "api-url", "a", "", "API URL")
+	profileAddCmd.Flags().StringVarP(&apiKeyFlag, "api-key", "k", "", "API Key")
 }

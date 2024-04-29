@@ -37,13 +37,17 @@ var PortForwardCmd = &cobra.Command{
 		}
 
 		if len(args) > 1 {
-			workspaceId = args[1]
+			workspace, err := server.GetWorkspace(args[1])
+			if err != nil {
+				log.Fatal(err)
+			}
+			workspaceId = *workspace.Id
 		}
 
 		if len(args) == 3 {
 			projectName = args[2]
 		} else {
-			projectName, err = util.GetFirstWorkspaceProjectName(workspaceId, projectName, nil)
+			projectName, err = server.GetFirstWorkspaceProjectName(workspaceId, projectName, nil)
 			if err != nil {
 				log.Fatal(err)
 			}

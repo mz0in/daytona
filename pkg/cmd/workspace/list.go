@@ -15,6 +15,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var verbose bool
+
 var ListCmd = &cobra.Command{
 	Use:     "list",
 	Short:   "List workspaces",
@@ -29,17 +31,18 @@ var ListCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		workspaceList, res, err := apiClient.WorkspaceAPI.ListWorkspaces(ctx).Execute()
+		workspaceList, res, err := apiClient.WorkspaceAPI.ListWorkspaces(ctx).Verbose(verbose).Execute()
+
 		if err != nil {
 			log.Fatal(apiclient.HandleErrorResponse(res, err))
 		}
 
-		serverConfig, res, err := apiClient.ServerAPI.GetConfig(ctx).Execute()
+		gitProviders, res, err := apiClient.GitProviderAPI.ListGitProviders(ctx).Execute()
 		if err != nil {
 			log.Fatal(apiclient.HandleErrorResponse(res, err))
 		}
 
-		if len(serverConfig.GitProviders) > 1 {
+		if len(gitProviders) > 1 {
 			specifyGitProviders = true
 		}
 
@@ -55,4 +58,8 @@ var ListCmd = &cobra.Command{
 
 		list_view.ListWorkspaces(workspaceList, specifyGitProviders)
 	},
+}
+
+func init() {
+	ListCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Show verbose output")
 }

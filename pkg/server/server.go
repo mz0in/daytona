@@ -5,59 +5,118 @@ package server
 
 import (
 	"fmt"
-	"net"
 	"os"
 	"os/signal"
 	"time"
 
-	"github.com/daytonaio/daytona/pkg/server/api"
-	"github.com/daytonaio/daytona/pkg/server/config"
-	"github.com/daytonaio/daytona/pkg/server/frpc"
-	"github.com/daytonaio/daytona/pkg/server/headscale"
-	"github.com/daytonaio/daytona/pkg/server/logs"
-	"github.com/daytonaio/daytona/pkg/types"
+	"github.com/daytonaio/daytona/internal/util"
+	"github.com/daytonaio/daytona/pkg/frpc"
+	"github.com/daytonaio/daytona/pkg/provider/manager"
+	"github.com/daytonaio/daytona/pkg/server/apikeys"
+	"github.com/daytonaio/daytona/pkg/server/containerregistries"
+	"github.com/daytonaio/daytona/pkg/server/gitproviders"
+	"github.com/daytonaio/daytona/pkg/server/providertargets"
+	"github.com/daytonaio/daytona/pkg/server/workspaces"
 	"github.com/hashicorp/go-plugin"
 
 	log "github.com/sirupsen/logrus"
 )
 
-type Self struct {
-	HostName string `json:"HostName"`
-	DNSName  string `json:"DNSName"`
+type ServerInstanceConfig struct {
+	Config                   Config
+	TailscaleServer          TailscaleServer
+	ProviderTargetService    providertargets.IProviderTargetService
+	ContainerRegistryService containerregistries.IContainerRegistryService
+	WorkspaceService         workspaces.IWorkspaceService
+	ApiKeyService            apikeys.IApiKeyService
+	GitProviderService       gitproviders.IGitProviderService
+	ProviderManager          manager.IProviderManager
 }
 
-func Start() error {
-	err := logs.Init()
+var server *Server
+
+func GetInstance(serverConfig *ServerInstanceConfig) *Server {
+	if serverConfig != nil && server != nil {
+		log.Fatal("Server already initialized")
+	}
+
+	if server == nil {
+		if serverConfig == nil {
+			log.Fatal("Server not initialized")
+		}
+		server = &Server{
+			config:                   serverConfig.Config,
+			TailscaleServer:          serverConfig.TailscaleServer,
+			ProviderTargetService:    serverConfig.ProviderTargetService,
+			ContainerRegistryService: serverConfig.ContainerRegistryService,
+			WorkspaceService:         serverConfig.WorkspaceService,
+			ApiKeyService:            serverConfig.ApiKeyService,
+			GitProviderService:       serverConfig.GitProviderService,
+			ProviderManager:          serverConfig.ProviderManager,
+		}
+	}
+
+	return server
+}
+
+type Server struct {
+	config                   Config
+	TailscaleServer          TailscaleServer
+	ContainerRegistryService containerregistries.IContainerRegistryService
+	ProviderTargetService    providertargets.IProviderTargetService
+	WorkspaceService         workspaces.IWorkspaceService
+	ApiKeyService            apikeys.IApiKeyService
+	GitProviderService       gitproviders.IGitProviderService
+	ProviderManager          manager.IProviderManager
+}
+
+func (s *Server) Start(errCh chan error) error {
+	err := s.initLogs()
 	if err != nil {
 		return err
 	}
 
 	log.Info("Starting Daytona server")
 
-	c, err := config.GetConfig()
+	// Terminate orphaned provider processes
+	err = s.ProviderManager.TerminateProviderProcesses(s.config.ProvidersDir)
+	if err != nil {
+		log.Errorf("Failed to terminate orphaned provider processes: %s", err)
+	}
+
+	err = s.downloadDefaultProviders()
 	if err != nil {
 		return err
 	}
 
-	err = downloadDefaultProviders()
-	if err != nil {
-		return err
-	}
-
-	err = registerProviders(c)
+	err = s.registerProviders()
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		if err := frpc.ConnectServer(); err != nil {
-			log.Fatal(err)
+		err := frpc.Connect(frpc.FrpcConnectParams{
+			ServerDomain: s.config.Frps.Domain,
+			ServerPort:   int(s.config.Frps.Port),
+			Name:         fmt.Sprintf("daytona-server-%s", s.config.Id),
+			Port:         int(s.config.HeadscalePort),
+			SubDomain:    s.config.Id,
+		})
+		if err != nil {
+			errCh <- err
 		}
 	}()
 
 	go func() {
-		if err := frpc.ConnectApi(); err != nil {
-			log.Fatal(err)
+		err := frpc.Connect(frpc.FrpcConnectParams{
+			ServerDomain: s.config.Frps.Domain,
+			ServerPort:   int(s.config.Frps.Port),
+			Name:         fmt.Sprintf("daytona-server-api-%s", s.config.Id),
+			Port:         int(s.config.ApiPort),
+			SubDomain:    fmt.Sprintf("api-%s", s.config.Id),
+		})
+		if err != nil {
+			errCh <- err
 		}
 	}()
 
@@ -75,30 +134,26 @@ func Start() error {
 	go func() {
 		errChan := make(chan error)
 		go func() {
-			errChan <- headscale.Start(c)
+			errChan <- s.TailscaleServer.Start()
 		}()
 
 		select {
 		case err := <-errChan:
-			log.Fatal(err)
+			errCh <- err
 		case <-time.After(1 * time.Second):
 			go func() {
-				errChan <- headscale.Connect()
+				errChan <- s.TailscaleServer.Connect()
 			}()
 		}
 
 		if err := <-errChan; err != nil {
-			log.Fatal(err)
+			errCh <- err
 		}
 	}()
 
-	return api.Start()
+	return nil
 }
 
-func getTcpListener(c *types.ServerConfig) (*net.Listener, error) {
-	listener, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", c.ApiPort))
-	if err != nil {
-		return nil, err
-	}
-	return &listener, nil
+func (s *Server) GetApiUrl() string {
+	return util.GetFrpcApiUrl(s.config.Frps.Protocol, s.config.Id, s.config.Frps.Domain)
 }

@@ -6,7 +6,6 @@ package workspace
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/daytonaio/daytona/internal/util/apiclient"
 	"github.com/daytonaio/daytona/internal/util/apiclient/server"
@@ -16,15 +15,30 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type WorkspaceState string
+
+const (
+	WORKSPACE_STATUS_RUNNING WorkspaceState = "Running"
+	WORKSPACE_STATUS_STOPPED WorkspaceState = "Unavailable"
+)
+
 var startProjectFlag string
+var allFlag bool
 
 var StartCmd = &cobra.Command{
-	Use:   "start [WORKSPACE_NAME]",
-	Short: "Start the workspace",
+	Use:   "start [WORKSPACE]",
+	Short: "Start a workspace",
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		if allFlag {
+			err := startAllWorkspaces()
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+
 		ctx := context.Background()
-		var workspaceName string
+		var workspaceId string
 
 		apiClient, err := server.GetApiClient(nil)
 		if err != nil {
@@ -37,38 +51,136 @@ var StartCmd = &cobra.Command{
 				log.Fatal(apiclient.HandleErrorResponse(res, err))
 			}
 
-			workspaceName = selection.GetWorkspaceNameFromPrompt(workspaceList, "start")
+			workspace := selection.GetWorkspaceFromPrompt(workspaceList, "start")
+			if workspace == nil {
+				return
+			}
+			workspaceId = *workspace.Name
 		} else {
-			workspaceName = args[0]
-		}
-
-		wsName, wsMode := os.LookupEnv("DAYTONA_WS_NAME")
-		if wsMode {
-			workspaceName = wsName
+			workspaceId = args[0]
 		}
 
 		if startProjectFlag == "" {
-			res, err := apiClient.WorkspaceAPI.StartWorkspace(ctx, workspaceName).Execute()
+			res, err := apiClient.WorkspaceAPI.StartWorkspace(ctx, workspaceId).Execute()
 			if err != nil {
 				log.Fatal(apiclient.HandleErrorResponse(res, err))
 			}
 		} else {
-			res, err := apiClient.WorkspaceAPI.StartProject(ctx, workspaceName, startProjectFlag).Execute()
+			res, err := apiClient.WorkspaceAPI.StartProject(ctx, workspaceId, startProjectFlag).Execute()
 			if err != nil {
 				log.Fatal(apiclient.HandleErrorResponse(res, err))
 			}
 		}
 
-		util.RenderInfoMessage(fmt.Sprintf("Workspace %s successfully started", workspaceName))
+		util.RenderInfoMessage(fmt.Sprintf("Workspace %s successfully started", workspaceId))
+	},
+	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		if len(args) != 0 {
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
+
+		return getAllWorkspacesByState(WORKSPACE_STATUS_STOPPED)
 	},
 }
 
 func init() {
-	_, exists := os.LookupEnv("DAYTONA_WS_DIR")
-	if exists {
-		StartCmd.Use = "start"
-		StartCmd.Args = cobra.ExactArgs(0)
+	StartCmd.PersistentFlags().StringVarP(&startProjectFlag, "project", "p", "", "Start a single project in the workspace (project name)")
+	StartCmd.PersistentFlags().BoolVarP(&allFlag, "all", "a", false, "Start all workspaces")
+
+	err := StartCmd.RegisterFlagCompletionFunc("project", getProjectNameCompletions)
+	if err != nil {
+		log.Error("failed to register completion function: ", err)
+	}
+}
+
+func startAllWorkspaces() error {
+	ctx := context.Background()
+	apiClient, err := server.GetApiClient(nil)
+	if err != nil {
+		return err
 	}
 
-	StartCmd.PersistentFlags().StringVarP(&startProjectFlag, "project", "p", "", "Start the single project in the workspace (project name)")
+	workspaceList, res, err := apiClient.WorkspaceAPI.ListWorkspaces(ctx).Execute()
+	if err != nil {
+		return apiclient.HandleErrorResponse(res, err)
+	}
+
+	for _, workspace := range workspaceList {
+		res, err := apiClient.WorkspaceAPI.StartWorkspace(ctx, *workspace.Id).Execute()
+		if err != nil {
+			log.Errorf("Failed to start workspace %s: %v", *workspace.Id, apiclient.HandleErrorResponse(res, err))
+			continue
+		}
+		fmt.Printf("Workspace %s successfully started\n", *workspace.Id)
+	}
+	return nil
+}
+
+func getProjectNameCompletions(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	ctx := context.Background()
+	apiClient, err := server.GetApiClient(nil)
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveDefault
+	}
+
+	workspaceId := args[0]
+	workspace, _, err := apiClient.WorkspaceAPI.GetWorkspace(ctx, workspaceId).Execute()
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveDefault
+	}
+
+	var choices []string
+	for _, project := range workspace.Projects {
+		choices = append(choices, *project.Name)
+	}
+	return choices, cobra.ShellCompDirectiveDefault
+}
+
+func getWorkspaceNameCompletions() ([]string, cobra.ShellCompDirective) {
+	ctx := context.Background()
+	apiClient, err := server.GetApiClient(nil)
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+
+	workspaceList, _, err := apiClient.WorkspaceAPI.ListWorkspaces(ctx).Execute()
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+
+	var choices []string
+	for _, v := range workspaceList {
+		choices = append(choices, *v.Name)
+	}
+
+	return choices, cobra.ShellCompDirectiveNoFileComp
+}
+
+func getAllWorkspacesByState(state WorkspaceState) ([]string, cobra.ShellCompDirective) {
+	ctx := context.Background()
+	apiClient, err := server.GetApiClient(nil)
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+
+	workspaceList, _, err := apiClient.WorkspaceAPI.ListWorkspaces(ctx).Execute()
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+
+	var choices []string
+	for _, workspace := range workspaceList {
+		for _, project := range workspace.Info.Projects {
+			if state == WORKSPACE_STATUS_RUNNING && *project.IsRunning {
+				choices = append(choices, *workspace.Name)
+				break
+			}
+			if state == WORKSPACE_STATUS_STOPPED && !*project.IsRunning {
+				choices = append(choices, *workspace.Name)
+				break
+			}
+		}
+	}
+
+	return choices, cobra.ShellCompDirectiveNoFileComp
 }
